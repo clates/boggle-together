@@ -34,6 +34,11 @@ describe('room-code words match the database', () => {
     expect(ROOM_WORDS).toContain('PECAN')
   })
 
+  it('leaves out the words that sound alike on a call (review round 1)', () => {
+    for (const w of ['SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE'])
+      expect(ROOM_WORDS).not.toContain(w)
+  })
+
   it('MAX_WORD_LENGTH fits the longest word, old or new', () => {
     expect(MAX_WORD_LENGTH).toBe(Math.max(...[...ROOM_WORDS, ...LEGACY_ROOM_WORDS].map((w) => w.length)))
   })

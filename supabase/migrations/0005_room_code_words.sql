@@ -1,6 +1,7 @@
 -- Room codes are mostly read out loud on a call ("pecan 2654"), so the words are chosen to be
 -- heard once and typed right: one or two syllables, plain spelling, no homophones (fir/fur,
--- yew/you, beech/beach), no near-rhymes or look-alike pairs, all from the tree/plant/garden theme.
+-- yew/you, beech/beach), no near-rhymes or look-alike pairs (sprout/spruce, oak/okra), nothing that
+-- sounds like a letter or a number, all from the tree/plant/garden theme.
 -- Same behavior as 0001 otherwise. Existing rooms keep their codes (codes are plain strings).
 -- Keep this list identical to ROOM_WORDS in src/lib/roomCode.ts (a unit test checks it).
 create or replace function public.create_room() returns text
@@ -8,16 +9,16 @@ language plpgsql security definer set search_path = public as $$
 declare
   v_uid uuid := auth.uid();
   v_words text[] := array[
-    'OAK','ELM','ASH','BIRCH','MAPLE','SPRUCE','WILLOW','HAZEL','LARCH','ASPEN',
+    'OAK','ELM','SEAWEED','BIRCH','MAPLE','SPRUCE','WILLOW','HAZEL','SHRUB','ASPEN',
     'LINDEN','HOLLY','LAUREL','REDWOOD','TEAK','PALM','BAMBOO','BONSAI','SAPLING','STUMP',
-    'BARK','WALNUT','PECAN','CASHEW','NUTMEG','ACORN','HUSK','CHERRY','FIG','OLIVE',
-    'MANGO','LEMON','LIME','ORANGE','PEACH','GRAPE','KIWI','DATE','CLOVER','TULIP',
-    'DAISY','LILAC','IRIS','POPPY','LOTUS','HEATHER','BLUEBELL','BRAMBLE','CACTUS','FERN',
+    'BARK','WALNUT','PECAN','CASHEW','NUTMEG','ACORN','HUSK','CHERRY','FIELD','OLIVE',
+    'MANGO','LEMON','LIME','ORANGE','PEACH','GRAPE','KIWI','THATCH','CLOVER','TULIP',
+    'DAISY','LILAC','TRUFFLE','POPPY','LOTUS','HEATHER','BLUEBELL','BRAMBLE','CACTUS','FERN',
     'MOSS','IVY','BLOSSOM','BUD','LEAF','POLLEN','NECTAR','SAGE','MINT','DILL',
-    'CHIVE','FENNEL','GINGER','PEPPER','MUSTARD','RADISH','BEAN','SQUASH','PUMPKIN','KALE',
-    'ONION','GARLIC','PARSNIP','CABBAGE','SPINACH','OKRA','YAM','MUSHROOM','WHEAT','BARLEY',
-    'RICE','COTTON','FLAX','COFFEE','SPROUT','BRANCH','GARDEN','MEADOW','ORCHARD','GROVE',
-    'FOREST','HEDGE','HARVEST','SOIL','MULCH','COMPOST','PEBBLE','SHOVEL','BUCKET','WAGON'];
+    'CHIVE','STRAW','LAWN','PEPPER','MUSTARD','RADISH','BEAN','SQUASH','PUMPKIN','KALE',
+    'ONION','PRIMROSE','PARSNIP','CABBAGE','SPINACH','WICKER','YAM','PLANTER','WHEAT','BARLEY',
+    'RICE','COTTON','FLAX','COFFEE','SNOWDROP','BRANCH','GARDEN','MEADOW','ORCHARD','GROVE',
+    'FOREST','HEDGE','HARVEST','SOIL','MULCH','COMPOST','CRESS','SHOVEL','BUCKET','WAGON'];
   v_code text;
   v_tries int := 0;
 begin
