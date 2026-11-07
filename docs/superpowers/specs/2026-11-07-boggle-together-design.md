@@ -63,10 +63,10 @@ When every household is ready, the countdown starts.
 
 This is the most important screen. Chris specifically chose and refined it.
 
-- **White background.** The letters fill almost the entire screen. Maximize letter size.
-- **The background is the timer.** A full-screen color fill starts green and drains downward. As it drains, its color shifts gradually from green to yellow to red. When the fill is gone, the round is over.
+- **Plain, light background** (a faint blue in the shipped theme). The letters fill almost the entire screen. Maximize letter size.
+- **The background is the timer.** A full-screen color fill starts green and drains downward. As it drains, its color shifts gradually from green to yellow to red (an OKLCH sweep, bluish green to sunflower to vermilion; a darker waterline marks its top edge and faint stripes mark the last 20%, so the stage does not rely on color alone). When the fill is gone, the round is over.
 - **No numeric clock anywhere.** This was an explicit decision: "knowing there are precisely 8s doesn't aid you, just keep writing faster." Do not add a number.
-- Letter tiles have white faces with dark outlines, so they stay readable over every fill color.
+- Letter tiles have light (ivory) faces with dark navy letters and outlines, so they stay readable over every fill color.
 - At the end, "Pens down!" appears.
 - A small **dog-ear panel** tucked into a corner holds the rotate button and, probably, the room code. It stays out of the way of the letters.
 - **Rotate:** each household can turn the board in 90-degree steps on its own screen. This is local and affects nobody else. (Players sit on different sides of the table.) This is my call; Chris liked it.
