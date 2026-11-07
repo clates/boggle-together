@@ -1,5 +1,7 @@
 # Boggle Together
 
+[![CI](https://github.com/clates/boggle-together/actions/workflows/ci.yml/badge.svg)](https://github.com/clates/boggle-together/actions/workflows/ci.yml)
+
 A shared Boggle board and a shared timer for pen-and-paper game night between households that live far apart. Each household puts one shared screen (usually a tablet) in the middle of its table, and every household's screen shows the same board at the same moment, with the same countdown. Everyone still writes words on paper and scores out loud on the video call. A few people can instead type their words on their own phone; typists only type words and do not see the board.
 
 Built with React, Vite, TypeScript, and Supabase.
