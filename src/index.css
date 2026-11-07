@@ -265,7 +265,7 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
    100dvh without it), so an open keyboard shrinks the layout instead of covering it. It is a size
    container: the board is the largest square that leaves --typist-reserve below it for the input
    and the list header, and at most 55% of the height. The list takes what is left and scrolls. */
-.typist { max-width: none; margin: 0; padding: 0; display: block; gap: 0; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: #fff; container: typist / size; --top: 0px; --typist-reserve: 158px; }
+.typist { max-width: none; margin: 0; padding: 0; display: block; gap: 0; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: var(--bg); container: typist / size; --top: 0px; --typist-reserve: 158px; }
 .typist-locked { --typist-reserve: 204px; }
 .typist-layout { position: relative; height: 100%; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; --tb: max(0px, min(100cqw - 24px, 55cqh, 100cqh - var(--typist-reserve))); }
 .typist-board { flex: none; align-self: center; width: var(--tb); height: var(--tb); }
@@ -274,15 +274,17 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 .typist-side { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .typist-timesup { flex: none; font-size: 1.6rem; line-height: 36px; text-align: center; }
 .typist-form { flex: none; }
-input.typist-input { font-size: 24px; width: 100%; box-sizing: border-box; min-height: 56px; }
-.typist-message { flex: none; font-size: 16px; }
-/* The list card is translucent so the timer shows through it; its text is #222, which stays above
-   7:1 against the card blended over every drain color (9.55:1 over the end-of-round red). */
-.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: rgb(255 255 255 / 0.7); border: 2px solid #222; border-radius: 12px; overflow: hidden; }
-.typist-words-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 14px; border-bottom: 1px solid #ddd; }
-.typist-count { margin: 0; font-size: 16px; color: #222; }
-.typist-words .muted { color: #222; }
-button.typist-rotate { margin: 4px 0; color: #222; border-color: #555; }
+/* An ink border: the field sits over the timer colours, where --line-strong would fade. */
+input.typist-input { font-size: 24px; width: 100%; box-sizing: border-box; min-height: 56px; border-color: var(--ink); }
+/* An opaque pill: bare error red over the timer red would be unreadable (about 1.3:1). */
+.typist-message { flex: none; align-self: flex-start; max-width: 100%; box-sizing: border-box; font-size: 16px; padding: 4px 12px; background: var(--surface); border: 2px solid var(--error); border-radius: var(--radius); }
+/* The list card is translucent (--typist-card, the surface at 72%) so the timer shows through it; its
+   ink text stays above 10:1 against the card blended over every drain colour (see docs). */
+.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--typist-card); border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; }
+.typist-words-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 14px; border-bottom: 1px solid var(--line); }
+.typist-count { margin: 0; font-size: 16px; color: var(--ink); }
+.typist-words .muted { color: var(--ink); }
+button.typist-rotate { margin: 4px 0; color: var(--ink); border-color: var(--line-strong); }
 .typist-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 6px 14px 10px; font-size: 20px; line-height: 1.5; }
 /* Landscape phone: board on the left, input and list on the right. */
 @container typist (aspect-ratio >= 3/2) {
