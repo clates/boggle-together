@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { estimateOffset, type ClockSample } from './clock'
 import { derivePhase, type Phase } from './phase'
+import { RpcError } from './rpcError'
 import { ensureSession, supabase, type Client } from './supabase'
 
 export type RoomRow = {
@@ -248,7 +249,8 @@ export function useRoom(rawCode: string, client: Client = supabase) {
       const { error } = await client.rpc(fn, { p_code: code, ...args })
       if (error) {
         if (error.message === BENIGN) return
-        throw new Error(error.message)
+        // keep the code: an empty code means the request never got an answer (network)
+        throw new RpcError(error.message, typeof error.code === 'string' ? error.code : '')
       }
     },
     [client, code],

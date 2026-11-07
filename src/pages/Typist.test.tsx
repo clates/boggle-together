@@ -1,7 +1,11 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant } from '../lib/useRoom'
+import { RpcError } from '../lib/rpcError'
 import Typist, { type TypistRoom } from './Typist'
+
+const rejected = (msg: string) => new RpcError(msg, 'P0001')
+const offline = () => new RpcError('TypeError: Failed to fetch', '')
 
 const me: Participant = { room_code: 'ABCD', id: '1', kind: 'typist', name: 'Typist', ready: false, pens_down: false }
 
@@ -56,7 +60,7 @@ describe('Typist', () => {
   })
 
   it('shows Too late on rejection, keeps earlier words, and removes the rejected one', async () => {
-    const submitWord = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Too late'))
+    const submitWord = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(rejected('Too late'))
     render(<Typist room={makeRoom({ actions: { submitWord } })} />)
     type('cat')
     type('dog')
@@ -68,7 +72,15 @@ describe('Typist', () => {
   })
 
   it('shows other server messages as given', async () => {
-    const submitWord = vi.fn().mockRejectedValue(new Error('Word limit reached'))
+    const submitWord = vi.fn().mockRejectedValue(rejected('Invalid word'))
+    render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+    type('cat')
+    expect(await screen.findByText('Invalid word')).toBeTruthy()
+    expect(screen.queryByText('CAT')).toBeNull()
+  })
+
+  it('shows Word limit reached', async () => {
+    const submitWord = vi.fn().mockRejectedValue(rejected('Word limit reached'))
     render(<Typist room={makeRoom({ actions: { submitWord } })} />)
     type('cat')
     expect(await screen.findByText('Word limit reached')).toBeTruthy()
@@ -87,7 +99,7 @@ describe('Typist', () => {
   })
 
   it('locked still shows the list and still accepts an attempt', async () => {
-    const submitWord = vi.fn().mockRejectedValue(new Error('Too late'))
+    const submitWord = vi.fn().mockRejectedValue(rejected('Too late'))
     const { rerender } = render(<Typist room={makeRoom()} />)
     type('cat')
     rerender(<Typist room={makeRoom({ phase: 'locked', actions: { submitWord } })} />)
@@ -112,5 +124,50 @@ describe('Typist', () => {
     expect(await screen.findByText('CAT')).toBeTruthy()
     expect(screen.getAllByText('DOG')).toHaveLength(1)
     await act(async () => {})
+  })
+
+  describe('flaky network', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    it('keeps the word marked sending... while it retries, then clears the mark', async () => {
+      const submitWord = vi.fn().mockRejectedValueOnce(offline()).mockRejectedValueOnce(offline()).mockResolvedValueOnce(undefined)
+      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      type('cat')
+      await act(() => vi.advanceTimersByTimeAsync(0))
+      expect(screen.getByRole('listitem')).toHaveTextContent('CAT sending...')
+      expect(screen.queryByRole('alert')).toBeNull()
+      await act(() => vi.advanceTimersByTimeAsync(500))
+      expect(submitWord).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole('listitem')).toHaveTextContent('CAT sending...')
+      await act(() => vi.advanceTimersByTimeAsync(1000))
+      expect(submitWord).toHaveBeenCalledTimes(3)
+      expect(screen.getByRole('listitem')).toHaveTextContent(/^CAT$/)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('removes the word after 3 failed retries with a connection message', async () => {
+      const submitWord = vi.fn().mockRejectedValue(offline())
+      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      type('cat')
+      await act(() => vi.advanceTimersByTimeAsync(3499))
+      expect(screen.getByText(/CAT/)).toBeTruthy()
+      await act(() => vi.advanceTimersByTimeAsync(1))
+      expect(submitWord).toHaveBeenCalledTimes(4)
+      expect(screen.queryByText(/CAT/)).toBeNull()
+      expect(screen.getByRole('alert')).toHaveTextContent("Couldn't send. Check your connection.")
+    })
+
+    it('a server rejection during retries removes the word at once with its message', async () => {
+      const submitWord = vi.fn().mockRejectedValueOnce(offline()).mockRejectedValueOnce(rejected('Too late'))
+      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      type('cat')
+      await act(() => vi.advanceTimersByTimeAsync(500))
+      expect(submitWord).toHaveBeenCalledTimes(2)
+      expect(screen.queryByText(/CAT/)).toBeNull()
+      expect(screen.getByRole('alert')).toHaveTextContent('Too late')
+      await act(() => vi.advanceTimersByTimeAsync(5000))
+      expect(submitWord).toHaveBeenCalledTimes(2)
+    })
   })
 })

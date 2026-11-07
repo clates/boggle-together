@@ -2,10 +2,29 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 export type Client = SupabaseClient
 
-export const supabase: Client = createClient(
+/**
+ * Adds `keepalive: true` to RPC POSTs, so a word typed just before the page unloads (tab closed,
+ * phone locked) is still delivered. Other requests are passed through unchanged.
+ */
+export function keepaliveFetch(base: typeof fetch = (...args) => fetch(...args)): typeof fetch {
+  return (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
+    if (method === 'POST' && url.includes('/rest/v1/rpc/')) return base(input, { ...init, keepalive: true })
+    return base(input, init)
+  }
+}
+
+export function makeClient(url: string, key: string, baseFetch?: typeof fetch): Client {
+  return createClient(url, key, {
+    auth: { persistSession: true, autoRefreshToken: true },
+    global: { fetch: keepaliveFetch(baseFetch) },
+  })
+}
+
+export const supabase: Client = makeClient(
   import.meta.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321',
   import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'missing-anon-key',
-  { auth: { persistSession: true, autoRefreshToken: true } },
 )
 
 const inflight = new WeakMap<object, Promise<string>>()
