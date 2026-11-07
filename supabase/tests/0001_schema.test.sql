@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(27);
 
 -- Fixed users (id equals auth.uid())
 -- u1 creates/joins, u2 is an outsider, u3.. fill rooms.
@@ -40,8 +40,15 @@ select is((select count(*)::int from public.rooms), 0, 'non-member sees no rooms
 select is((select count(*)::int from public.participants), 0, 'non-member sees no participants');
 
 -- name length (after trim)
-select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', '   ')$$, null, null, 'blank name refused');
-select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', repeat('x', 25))$$, null, null, '25-char name refused');
+select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', '   ')$$, null, 'Name must be 1 to 24 characters', 'blank name refused');
+select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', repeat('x', 25))$$, null, 'Name must be 1 to 24 characters', '25-char name refused');
+
+-- valid names: exactly 24 chars, and padded (trimmed before the length check)
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000005","role":"authenticated"}';
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', repeat('y', 24))$$, '24-char name accepted');
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000006","role":"authenticated"}';
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', '  ' || repeat('z', 24) || '  ')$$, 'padded 24-char name accepted');
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
 -- capacity: fill to 4 households as superuser, then a 5th is refused
 reset role;
@@ -52,11 +59,16 @@ set local role authenticated;
 select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Fifth')$$, null, 'Room is full', '5th household refused');
 select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', 'Typer')$$, 'typist still allowed with 4 households');
 
+-- rejoin keeps the stored kind (cannot sneak past the household cap) but updates the name
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Renamed')$$, 'rejoin does not raise');
+select is((select kind from public.participants where id = '00000000-0000-0000-0000-000000000002'), 'typist', 'rejoin keeps stored kind');
+select is((select name from public.participants where id = '00000000-0000-0000-0000-000000000002'), 'Renamed', 'rejoin updates name');
+
 -- fill to 24 total, 25th refused
 reset role;
 insert into public.participants (room_code, id, kind, name)
 select (select v from ctx where k = 'code'), ('00000000-0000-0000-0000-0000000002' || lpad(i::text, 2, '0'))::uuid, 'typist', 'T' || i
-from generate_series(1, 19) i;
+from generate_series(1, 17) i;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000399","role":"authenticated"}';
 select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', 'Late')$$, null, 'Room is full', '25th participant refused');

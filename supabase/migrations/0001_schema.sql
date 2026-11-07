@@ -106,6 +106,8 @@ begin
   if v_uid is null then
     raise exception 'Not signed in';
   end if;
+  -- serialize per user so parallel calls cannot exceed the limit
+  perform pg_advisory_xact_lock(hashtextextended('create_room:' || v_uid::text, 0));
   if (select count(*) from public.rooms
       where created_by = v_uid and created_at > now() - interval '1 hour') >= 10 then
     raise exception 'Too many rooms';
@@ -150,7 +152,7 @@ begin
   end if;
 
   if exists (select 1 from public.participants where room_code = v_code and id = v_uid) then
-    update public.participants set name = v_name, kind = p_kind
+    update public.participants set name = v_name
       where room_code = v_code and id = v_uid;
   else
     if (select count(*) from public.participants where room_code = v_code) >= 24
