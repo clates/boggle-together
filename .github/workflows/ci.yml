@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Containers the tests do not need (names valid for supabase CLI 3.x `start --exclude`).
+  SUPABASE_EXCLUDE: studio,imgproxy,mailpit,edge-runtime,logflare,vector
+
+jobs:
+  unit:
+    name: Unit tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # package.json engines needs ^22.22.2; check-latest picks the newest 22.x.
+          node-version: 22
+          check-latest: true
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Type-check and build
+        run: npm run build
+        env:
+          # The production build guard needs these set; they are placeholders, never used to connect.
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  database:
+    name: Database tests (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+      - run: npm ci
+      - name: Start Supabase
+        run: npx supabase start -x "$SUPABASE_EXCLUDE"
+      - name: Reset database (migrations and seed)
+        run: npx supabase db reset
+      - name: Run pgTAP tests
+        run: npx supabase test db
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop --no-backup
+
+  e2e:
+    name: End-to-end tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+      - run: npm ci
+      - name: Install psql (used by the e2e harness)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Start Supabase
+        run: npx supabase start -x "$SUPABASE_EXCLUDE"
+      - name: Reset database (migrations and seed)
+        run: npx supabase db reset
+      - name: Write .env.local from the local stack
+        run: |
+          set -euo pipefail
+          npx supabase status -o env > "$RUNNER_TEMP/supabase.env"
+          set -a; . "$RUNNER_TEMP/supabase.env"; set +a
+          test -n "$API_URL" && test -n "$ANON_KEY"
+          printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > .env.local
+      - name: Run Playwright tests
+        run: npm run test:e2e
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop --no-backup
