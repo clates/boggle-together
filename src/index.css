@@ -13,7 +13,8 @@ form { display: flex; flex-direction: column; gap: 12px; }
 .choices input { width: 24px; height: 24px; }
 .error { color: #b00020; margin: 0; }
 .muted { color: #666; margin: 0; }
-.code { font-size: 3.5rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
+/* sized so the longest code (e.g. MAHOGANY-8888) stays on one line from phones to tablets */
+.code { font-size: min(2.8rem, 8.2vw); font-weight: 800; letter-spacing: 0.08em; margin: 0; white-space: nowrap; }
 .link { word-break: break-all; }
 .household-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
