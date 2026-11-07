@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import CodeField from '../components/CodeField'
 import HouseholdList from '../components/HouseholdList'
+import JoinQr from '../components/JoinQr'
 import LeaveRoom from '../components/LeaveRoom'
 import { unlockAudio } from '../lib/audio'
 import { isComplete, normalizeCode } from '../lib/roomCode'
@@ -42,6 +43,7 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
         <span className="link">{link}</span>{' '}
         <button type="button" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
       </p>
+      <JoinQr url={`${link}?m=type`} />
       <HouseholdList participants={participants} meId={me?.id} onRemove={(id) => void run(() => actions.removeParticipant(id))} />
       <button type="button" className="primary" onClick={() => (unlockAudio(), run(() => actions.setReady(!me?.ready)))}>
         Ready? {me?.ready ? '✅' : '⏳'}

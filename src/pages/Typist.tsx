@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { Phase } from '../lib/phase'
+import Board, { type Rotation } from '../components/Board'
+import Countdown from '../components/Countdown'
+import TimerFill from '../components/TimerFill'
+import { progress } from '../lib/phase'
 import { sendWithRetry } from '../lib/retry'
 import { isServerRejection } from '../lib/rpcError'
 import { normalizeWord } from '../lib/words'
 import type { useRoom } from '../lib/useRoom'
+import { useVisualViewport } from '../lib/useVisualViewport'
 
-type Room = ReturnType<typeof useRoom>
-export type TypistRoom = {
-  me: Room['me']
-  phase: Phase
+// The slice of the room hook this screen needs (the hook's return satisfies it).
+// No audio here: typists stay silent, so this screen never touches the audio engine.
+export type TypistRoom = Pick<ReturnType<typeof useRoom>, 'me' | 'phase' | 'room' | 'serverNowMs' | 'board'> & {
   actions: { submitWord: (w: string) => Promise<void> }
 }
 
@@ -23,7 +26,11 @@ export default function Typist({
   room: TypistRoom
   loadOwnWords?: () => Promise<string[]>
 }) {
-  const { phase, actions } = room
+  const { phase, actions, board, serverNowMs } = room
+  const rootRef = useRef<HTMLElement>(null)
+  useVisualViewport(rootRef)
+  const [rotation, setRotation] = useState<Rotation>(0)
+  const rotate = () => setRotation((r) => (((r + 90) % 360) as Rotation))
   const [text, setText] = useState('')
   const [words, setWords] = useState<string[]>([]) // newest first
   const [message, setMessage] = useState<string | null>(null)
@@ -87,47 +94,65 @@ export default function Typist({
     )
   }
 
-  if (phase === 'countdown') {
-    return (
-      <main>
-        <h1>Get ready...</h1>
-        <p>The board will appear on your household's screen.</p>
-      </main>
-    )
-  }
+  const now = serverNowMs()
+  const times = room.room ?? { start_at: null, ends_at: null, results_at: null }
+  const p = phase === 'playing' ? progress(times, now) : 0
 
   return (
-    <main>
-      {phase === 'locked' && <h1>Time's up!</h1>}
-      <form onSubmit={submit}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value)
-            setMessage(null)
-          }}
-          aria-label="Word"
-          inputMode="text"
-          autoCapitalize="characters"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="done"
-          style={{ fontSize: 24, width: '100%', boxSizing: 'border-box' }}
-        />
-      </form>
-      {message && <p role="alert" className="error">{message}</p>}
-      <p className="muted">{words.length === 1 ? '1 word' : `${words.length} words`}</p>
-      <ul style={{ listStyle: 'none', padding: 0, fontSize: 20 }}>
-        {words.map((w) => (
-          <li key={w}>
-            {w}
-            {sending.has(w) && <span className="muted"> sending...</span>}
-          </li>
-        ))}
-      </ul>
+    <main ref={rootRef} className={`typist typist-${phase}`} data-testid="typist">
+      <TimerFill progress={p} />
+      {phase === 'countdown' ? (
+        <Countdown startAt={times.start_at ? Date.parse(times.start_at) : NaN} now={now} line="Get ready to type" />
+      ) : (
+        <div className="typist-layout">
+          <div className="typist-board">
+            {board ? <Board letters={board} rotation={rotation} /> : <div className="board-blank" aria-label="Loading board" />}
+          </div>
+          <div className="typist-side">
+            {phase === 'locked' && <h1 className="typist-timesup">Time's up!</h1>}
+            <form onSubmit={submit} className="typist-form">
+              <input
+                ref={inputRef}
+                type="text"
+                className="typist-input"
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value)
+                  setMessage(null)
+                }}
+                aria-label="Word"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="done"
+              />
+            </form>
+            {message && (
+              <p role="alert" className="error typist-message">
+                {message}
+              </p>
+            )}
+            <section className="typist-words">
+              <div className="typist-words-head">
+                <p className="typist-count">{words.length === 1 ? '1 word' : `${words.length} words`}</p>
+                <button type="button" className="subtle typist-rotate" onClick={rotate}>
+                  Rotate board ↻
+                </button>
+              </div>
+              <ul className="typist-list">
+                {words.map((w) => (
+                  <li key={w}>
+                    {w}
+                    {sending.has(w) && <span className="muted"> sending...</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

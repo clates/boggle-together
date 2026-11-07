@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Board, { type Rotation } from '../components/Board'
+import Countdown from '../components/Countdown'
 import DogEar from '../components/DogEar'
+import TimerFill from '../components/TimerFill'
 import { useRoundAudio } from '../lib/audio/useRoundAudio'
-import { drainColor } from '../lib/drain'
 import { progress } from '../lib/phase'
 import type { useRoom } from '../lib/useRoom'
 
@@ -11,18 +12,6 @@ export type InGameRoom = Pick<ReturnType<typeof useRoom>, 'room' | 'me' | 'phase
 
 const SHOW_RESULTS_AFTER_MS = 30_000
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong')
-
-function Countdown({ startAt, now }: { startAt: number; now: number }) {
-  const seconds = Number.isFinite(startAt) ? Math.max(0, Math.ceil((startAt - now) / 1000)) : 0
-  return (
-    <div className="countdown">
-      <p className="countdown-number" data-testid="countdown" aria-live="assertive">
-        {seconds}
-      </p>
-      <p className="countdown-line">Get your pens ready</p>
-    </div>
-  )
-}
 
 function Locked({ room }: { room: InGameRoom }) {
   const { actions, me, serverNowMs } = room
@@ -119,14 +108,7 @@ export default function InGame({ code, room }: { code: string; room: InGameRoom 
 
   return (
     <div className={`ingame ingame-${phase}${prompt ? ' ingame-sound-prompt' : ''}`} data-testid="in-game">
-      {p > 0 && (
-        <div
-          className="fill"
-          data-testid="fill"
-          aria-hidden="true"
-          style={{ height: `${p * 100}%`, background: drainColor(p) }}
-        />
-      )}
+      <TimerFill progress={p} />
       {phase === 'countdown' ? (
         <Countdown startAt={times.start_at ? Date.parse(times.start_at) : NaN} now={now} />
       ) : (

@@ -1,17 +1,62 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Participant } from '../lib/useRoom'
+import type { Participant, RoomRow } from '../lib/useRoom'
 import { RpcError } from '../lib/rpcError'
+import { resetAudio } from '../lib/audio'
+import { FakeAudioContext } from '../lib/audio/fakeAudioContext'
 import Typist, { type TypistRoom } from './Typist'
+
+const LETTERS = ['T', 'E', 'R', 'S', 'A', 'N', 'O', 'I', 'L', 'D', 'P', 'M', 'U', 'C', 'H', 'Qu']
+const ROUND_MS = 180_000
+const T0 = Date.parse('2026-11-07T12:00:00Z')
 
 const rejected = (msg: string) => new RpcError(msg, 'P0001')
 const offline = () => new RpcError('TypeError: Failed to fetch', '')
 
 const me: Participant = { room_code: 'ABCD', id: '1', kind: 'typist', name: 'Typist', ready: false, pens_down: false }
 
-function makeRoom(over: Partial<TypistRoom> = {}): TypistRoom {
-  return { me, phase: 'playing', actions: { submitWord: vi.fn().mockResolvedValue(undefined) }, ...over }
+function makeRoom(over: Partial<TypistRoom> & { now?: number; roomOver?: Partial<RoomRow> } = {}): TypistRoom {
+  const { now = T0 + 1000, roomOver = {}, ...rest } = over
+  return {
+    me,
+    phase: 'playing',
+    room: {
+      code: 'ABCD',
+      round: 1,
+      start_at: new Date(T0).toISOString(),
+      ends_at: new Date(T0 + ROUND_MS).toISOString(),
+      results_at: null,
+      ...roomOver,
+    },
+    serverNowMs: () => now,
+    board: LETTERS,
+    actions: { submitWord: vi.fn().mockResolvedValue(undefined) },
+    ...rest,
+  }
 }
+
+// jsdom normalizes colors (hsl -> rgb), so compare against the same normalization of the expected value.
+function css(color: string) {
+  const probe = document.createElement('div')
+  probe.style.background = color
+  return probe.style.background
+}
+
+let AudioCtor: ReturnType<typeof vi.fn>
+beforeEach(() => {
+  const ctx = new FakeAudioContext({})
+  AudioCtor = vi.fn(function () {
+    return ctx
+  })
+  vi.stubGlobal('AudioContext', AudioCtor)
+  resetAudio()
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+  resetAudio()
+})
+
+const tileTexts = () => screen.getAllByTestId('tile').map((t) => t.textContent)
 
 function type(text: string) {
   const input = screen.getByRole('textbox')
@@ -86,16 +131,78 @@ describe('Typist', () => {
     expect(await screen.findByText('Word limit reached')).toBeTruthy()
   })
 
-  it('has no board and no clock', () => {
-    const { container } = render(<Typist room={makeRoom()} />)
-    expect(container.querySelector('[data-testid="board"], .board')).toBeNull()
+  it('playing: shows the board (same letters), the draining fill, and no clock', () => {
+    const { container } = render(<Typist room={makeRoom({ now: T0 + ROUND_MS / 2 })} />)
+    expect(screen.getByTestId('board')).toBeTruthy()
+    expect(tileTexts()).toEqual(LETTERS)
+    const fill = screen.getByTestId('fill')
+    expect(fill.style.height).toBe('50%')
+    expect(fill.style.background).toBe(css('hsl(65 70% 45%)'))
+    expect(fill).toHaveAttribute('aria-hidden', 'true')
+    expect(container.textContent).not.toMatch(/\d+:\d\d/)
+    expect(screen.getByRole('textbox')).toBeTruthy()
+  })
+
+  it('playing: the fill follows the clock (full at the start, nearly gone at the end)', () => {
+    const { rerender } = render(<Typist room={makeRoom({ now: T0 })} />)
+    expect(screen.getByTestId('fill').style.height).toBe('100%')
+    rerender(<Typist room={makeRoom({ now: T0 + ROUND_MS * 0.9 })} />)
+    expect(parseFloat(screen.getByTestId('fill').style.height)).toBeCloseTo(10, 5)
+    expect(screen.getByTestId('fill').style.background).toBe(css('hsl(13 70% 45%)'))
+  })
+
+  it('playing before the board arrives shows a blank square, not letters', () => {
+    render(<Typist room={makeRoom({ board: null })} />)
+    expect(screen.queryByTestId('board')).toBeNull()
+    expect(screen.getByLabelText('Loading board')).toBeTruthy()
+    expect(screen.getByRole('textbox')).toBeTruthy()
+  })
+
+  it('countdown: whole-second number and pens line, no board, no fill, no input', () => {
+    render(<Typist room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
+    expect(screen.getByTestId('countdown')).toHaveTextContent(/^3$/)
+    expect(screen.getByText('Get ready to type')).toBeTruthy()
+    expect(screen.queryByText(/pens/i)).toBeNull()
+    expect(screen.queryByTestId('board')).toBeNull()
+    expect(screen.queryByTestId('tile')).toBeNull()
+    expect(screen.queryByTestId('fill')).toBeNull()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('keeps a main landmark in every in-round phase', () => {
+    for (const [phase, now] of [['countdown', T0 - 2500], ['playing', T0 + 1000], ['locked', T0 + ROUND_MS + 500]] as const) {
+      const r = render(<Typist room={makeRoom({ phase, now })} />)
+      expect(screen.getByRole('main')).toHaveAttribute('data-testid', 'typist')
+      r.unmount()
+    }
+  })
+
+  it('locked: board stays, fill is gone, no clock', () => {
+    const { container } = render(<Typist room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
+    expect(tileTexts()).toEqual(LETTERS)
+    expect(screen.queryByTestId('fill')).toBeNull()
     expect(container.textContent).not.toMatch(/\d+:\d\d/)
   })
 
-  it('countdown shows a waiting message and no input', () => {
-    render(<Typist room={makeRoom({ phase: 'countdown' })} />)
-    expect(screen.getByText(/Get ready/)).toBeTruthy()
-    expect(screen.queryByRole('textbox')).toBeNull()
+  it('Rotate board turns the board a quarter turn each tap', () => {
+    render(<Typist room={makeRoom()} />)
+    const wrap = () => (screen.getByTestId('board').parentElement as HTMLElement).style.transform
+    expect(wrap()).toBe('rotate(0deg)')
+    const btn = screen.getByRole('button', { name: /rotate board/i })
+    fireEvent.click(btn)
+    expect(wrap()).toBe('rotate(90deg)')
+    fireEvent.click(btn)
+    fireEvent.click(btn)
+    fireEvent.click(btn)
+    expect(wrap()).toBe('rotate(0deg)')
+  })
+
+  it('never creates an audio context (typists stay silent)', () => {
+    const { rerender } = render(<Typist room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
+    rerender(<Typist room={makeRoom({ now: T0 + 1000 })} />)
+    type('cat')
+    rerender(<Typist room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
+    expect(AudioCtor).not.toHaveBeenCalled()
   })
 
   it('locked still shows the list and still accepts an attempt', async () => {
