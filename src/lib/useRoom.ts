@@ -67,6 +67,7 @@ export function useRoom(code: string, client: Client = supabase) {
     let reqId = 0
     let attempts = 0
     let retryTimer: ReturnType<typeof setTimeout> | undefined
+    let setupTimer: ReturnType<typeof setTimeout> | undefined
     let channel: ReturnType<Client['channel']> | undefined
     let authSub: { unsubscribe: () => void } | undefined
     setStatus('loading')
@@ -138,7 +139,7 @@ export function useRoom(code: string, client: Client = supabase) {
             if (s === 'SUBSCRIBED') void run()
           })
       } catch {
-        if (!cancelled) retryTimer = setTimeout(setup, 1000)
+        if (!cancelled) setupTimer = setTimeout(setup, 1000)
       }
     }
     // Backstop: Realtime can silently drop changes (e.g. cold start), so poll every 5 s while visible.
@@ -151,6 +152,7 @@ export function useRoom(code: string, client: Client = supabase) {
     return () => {
       cancelled = true
       clearTimeout(retryTimer)
+      clearTimeout(setupTimer)
       clearInterval(poll)
       document.removeEventListener('visibilitychange', onVisibility)
       authSub?.unsubscribe()

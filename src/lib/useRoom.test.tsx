@@ -22,6 +22,7 @@ function makeDb(opts: { userId?: string } = {}) {
     topics: new Map<string, { subscribed: boolean }>(),
     failRooms: false,
     failClock: false,
+    failSignIns: 0,
     setAuth: vi.fn(),
   }
 }
@@ -89,6 +90,10 @@ function makeFake(shared?: Db) {
     auth: {
       getSession: async () => ({ data: { session: db.signIns ? { user: { id: db.userId }, access_token: 'tok' } : null } }),
       signInAnonymously: async () => {
+        if (db.failSignIns > 0) {
+          db.failSignIns--
+          return { data: { user: null }, error: { message: 'net' } }
+        }
         db.signIns++
         return { data: { user: { id: db.userId } }, error: null }
       },
@@ -313,5 +318,24 @@ describe('useRoom', () => {
     unmount()
     const timers = vi.getTimerCount()
     expect(timers).toBe(0)
+  })
+
+  it('retries channel setup after a failed sign-in and then receives events without the poll', async () => {
+    const f = makeFake()
+    member(f)
+    f.db.failSignIns = 1
+    const { result, unmount } = renderHook(() => useRoom('OAK-01', f.client))
+    await flush()
+    expect(result.current.status).toBe('loading')
+    expect(f.db.handlers.length).toBe(0)
+    await advance(1200)
+    expect(f.db.handlers.length).toBeGreaterThan(0)
+    expect(result.current.status).toBe('ready')
+    f.db.rooms.set('OAK-01', room({ round: 9 }))
+    await act(async () => { f.db.handlers.forEach((cb) => cb()) })
+    await flush()
+    expect(result.current.room?.round).toBe(9)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
   })
 })
