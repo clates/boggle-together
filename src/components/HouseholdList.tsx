@@ -30,7 +30,7 @@ export default function HouseholdList({
           </li>
         ))}
       </ul>
-      {typists > 0 && <p className="muted">{typists} typing their words</p>}
+      {typists > 0 && <p className="muted">{typists === 1 ? '1 person typing on a phone' : `${typists} people typing on phones`}</p>}
     </div>
   )
 }

@@ -1,12 +1,22 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import CodeField from '../components/CodeField'
 import { ensureSession, supabase } from '../lib/supabase'
+
+// Focus the code field on tablets and laptops; on phones a keyboard popping up would hide the page.
+const wideScreen = () => {
+  try {
+    return window.matchMedia('(min-width: 600px)').matches
+  } catch {
+    return false
+  }
+}
 
 export default function Home() {
   const navigate = useNavigate()
-  const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [autoFocus] = useState(wideScreen)
 
   async function start() {
     setError(null)
@@ -23,30 +33,18 @@ export default function Home() {
     }
   }
 
-  function join(e: FormEvent) {
-    e.preventDefault()
-    const c = code.trim().toUpperCase()
-    if (!c) {
-      setError('Enter a room code')
-      return
-    }
-    navigate(`/r/${c}`)
-  }
-
   return (
     <main>
       <h1>Boggle Together</h1>
+      <p className="intro" data-testid="home-intro">
+        Stretch your table across town for game night. Everyone writes on paper while one shared board and timer keep
+        every household in step. Best alongside a voice or video call.
+      </p>
       <button type="button" className="primary" onClick={start} disabled={busy}>
         Start a room
       </button>
-      <form onSubmit={join}>
-        <label>
-          Room code
-          <input value={code} onChange={(e) => setCode(e.target.value)} autoCapitalize="characters" autoComplete="off" />
-        </label>
-        <button type="submit">Join a room</button>
-      </form>
       {error && <p role="alert" className="error">{error}</p>}
+      <CodeField label="Have a room code? Type it here" onGo={(code) => navigate(`/r/${code}`)} autoFocus={autoFocus} />
     </main>
   )
 }

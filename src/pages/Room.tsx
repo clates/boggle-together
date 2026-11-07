@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import CodeField from '../components/CodeField'
 import HouseholdList from '../components/HouseholdList'
 import LeaveRoom from '../components/LeaveRoom'
 import { unlockAudio } from '../lib/audio'
+import { isComplete, normalizeCode } from '../lib/roomCode'
 import { useRoom } from '../lib/useRoom'
 import { supabase } from '../lib/supabase'
 import InGame from './InGame'
@@ -55,9 +57,19 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
   )
 }
 
+// A retry of the same code (from the not-found page) must look it up again: each retry bumps a
+// counter in the location state, which remounts the room and so reruns the lookup.
 export default function Room() {
-  // codes are stored uppercase; a link typed or lowercased by a chat app must still work
-  const code = (useParams().code ?? '').trim().toUpperCase()
+  const retry = (useLocation().state as { retry?: number } | null)?.retry ?? 0
+  return <RoomView key={retry} />
+}
+
+function RoomView() {
+  // codes are stored uppercase; a link typed or lowercased by a chat app (or /r/pecan 2654) must still work
+  const param = (useParams().code ?? '').trim().toUpperCase()
+  const spoken = normalizeCode(param)
+  const code = isComplete(spoken) ? spoken : param
+  const retry = (useLocation().state as { retry?: number } | null)?.retry ?? 0
   const room = useRoom(code)
   const { status, me, phase } = room
   const navigate = useNavigate()
@@ -70,7 +82,17 @@ export default function Room() {
   if (status === 'not-found')
     return (
       <main>
-        <h1>Room not found</h1>
+        <h1 className="not-found">
+          No room with the code <span className="nowrap">{code}</span>
+        </h1>
+        <p className="muted">Check it against what was said, fix it here, and you will go straight in.</p>
+        <CodeField
+          key={code}
+          label="Room code"
+          initial={code}
+          autoFocus={retry > 0}
+          onGo={(c) => navigate(`/r/${c}`, { replace: true, state: { retry: retry + 1 } })}
+        />
         <Link to="/">Back to home</Link>
       </main>
     )
@@ -86,6 +108,7 @@ export default function Room() {
       return isTypist ? (
         <main>
           <h1>Waiting for the game to start</h1>
+          <p>When the round starts, type the words you find on this phone.</p>
           <p className="code">{code}</p>
           <LeaveRoom onLeave={leave} />
         </main>

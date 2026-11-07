@@ -19,7 +19,12 @@ describe('HouseholdList', () => {
     expect(screen.getByText('Smiths').closest('li')).toHaveTextContent('✅')
     expect(screen.getByText('Joneses').closest('li')).toHaveTextContent('⏳')
     expect(screen.queryByText('Tina')).not.toBeInTheDocument()
-    expect(screen.getByText('1 typing their words')).toBeInTheDocument()
+    expect(screen.getByText('1 person typing on a phone')).toBeInTheDocument()
+  })
+
+  it('counts several phone typists in plain words', () => {
+    render(<HouseholdList participants={[p('1', 'Smiths', 'household', true), p('2', 'Tina', 'typist', false), p('3', 'Jo', 'typist', false)]} />)
+    expect(screen.getByText('2 people typing on phones')).toBeInTheDocument()
   })
 
   it('has no Remove buttons unless asked', () => {

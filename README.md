@@ -2,13 +2,13 @@
 
 [![CI](https://github.com/clates/boggle-together/actions/workflows/ci.yml/badge.svg)](https://github.com/clates/boggle-together/actions/workflows/ci.yml)
 
-A shared Boggle board and a shared timer for pen-and-paper game night between households that live far apart. Each household puts one shared screen (usually a tablet) in the middle of its table, and every household's screen shows the same board at the same moment, with the same countdown. Everyone still writes words on paper and scores out loud on the video call. A few people can instead type their words on their own phone; typists only type words and do not see the board.
+A shared Boggle board and a shared timer for pen-and-paper game night between households that live far apart. Each household puts one shared screen (usually a tablet) in the middle of its table, and every household's screen shows the same board at the same moment, with the same countdown. Everyone still writes words on paper and scores out loud on the video call. A few people can instead type their words on their own phone (**Type on my phone**); the results then show which of their words no other typist found.
 
 Built with React, Vite, TypeScript, and Supabase.
 
 ## How the game works
 
-One person taps **Start a room** and shares the room code (a tree word and four digits, such as `MAPLE-4207`) or the link. Each household joins on its shared screen as **Shared screen**; anyone who wants to type their words joins on their own phone as **Type my words**. When every household taps **Ready?**, a short countdown starts and the same 4x4 board appears on every shared screen for a 3-minute round, with the background draining away as the timer. When time is up, each household taps **Pens down!**. The results then show the board and each typist's words, with words found by more than one typist struck through. Tap **Ready?** again for the next round. If a household is stuck, **Start anyway** appears once at least half the households are ready, results can be opened 30 seconds after the round, and any household can **Remove** a household that has gone (or someone who should not be there). Anyone can **Leave room**. The app does no scoring and no dictionary checks: settle those on the call.
+One person taps **Start a room** and shares the room code (a garden word and four digits, such as `PECAN-2654`) or the link. Codes are made to be read out on the call: on the home screen, typing what was said ("pecan 2654", any case, with or without a space or hyphen) or pasting the link goes straight into the room, and a near miss such as `PECKAN` gets a "Did you mean PECAN?". Each household joins on its shared screen as **Shared screen**; anyone who wants to type their words joins on their own phone as **Type on my phone** (a link with `?m=type` preselects it). The join form remembers the last name and choice on that device. When every household taps **Ready?**, a short countdown starts and the same 4x4 board appears on every shared screen for a 3-minute round, with the background draining away as the timer. When time is up, each household taps **Pens down!**. The results then show the board and each typist's words, with words found by more than one typist struck through. Tap **Ready?** again for the next round. If a household is stuck, **Start anyway** appears once at least half the households are ready, results can be opened 30 seconds after the round, and any household can **Remove** a household that has gone (or someone who should not be there). Anyone can **Leave room**. The app does no scoring and no dictionary checks: settle those on the call.
 
 ## Run locally
 
@@ -106,7 +106,7 @@ The app is a static site plus a Supabase project. There is no server of your own
    ```
 
 5. Build with your project's settings (Project Settings > API): set `VITE_SUPABASE_URL` to the project URL and `VITE_SUPABASE_ANON_KEY` to the anon (or publishable) key. A production build without them shows "This site is not configured".
-6. Deploy the static build (`npm run build`, output in `dist/`) to Vercel or any static host. Set the two variables in the host's environment settings, and add an SPA rewrite that serves `index.html` for every path. Without it, invite links such as `/r/MAPLE-4207` return 404. On Vercel that is a `vercel.json` with:
+6. Deploy the static build (`npm run build`, output in `dist/`) to Vercel or any static host. Set the two variables in the host's environment settings, and add an SPA rewrite that serves `index.html` for every path. Without it, invite links such as `/r/PECAN-2654` return 404. On Vercel that is a `vercel.json` with:
 
    ```json
    { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }

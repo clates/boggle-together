@@ -4,13 +4,17 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant } from '../lib/useRoom'
 
-const hook = vi.hoisted(() => ({ value: {} as any, code: '' }))
-vi.mock('../lib/useRoom', () => ({
-  useRoom: (code: string) => {
-    hook.code = code
-    return hook.value
-  },
-}))
+const hook = vi.hoisted(() => ({ value: {} as any, code: '', mounts: 0 }))
+vi.mock('../lib/useRoom', async () => {
+  const { useState } = await import('react')
+  return {
+    useRoom: (code: string) => {
+      useState(() => hook.mounts++) // counts fresh lookups (mounts), not re-renders
+      hook.code = code
+      return hook.value
+    },
+  }
+})
 vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
 import { resetAudio } from '../lib/audio'
@@ -63,12 +67,55 @@ const roundRoom = (now: number) => ({
 })
 
 describe('Room', () => {
-  it('shows Room not found with a link home', async () => {
+  it('not found: shows the code that was typed and a link home', async () => {
     setHook({ status: 'not-found' })
-    renderRoom()
-    expect(screen.getByText('Room not found')).toBeInTheDocument()
+    renderRoom('/r/peckan-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECKAN-2654')
+    expect(screen.getByLabelText(/room code/i)).toHaveValue('PECKAN-2654')
     await userEvent.click(screen.getByRole('link', { name: /home/i }))
     expect(screen.getByText('HOME PAGE')).toBeInTheDocument()
+  })
+
+  it('not found: correct the code in place and it retries straight away', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECAN-2655')
+    expect(hook.code).toBe('PECAN-2655')
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Backspace}4')
+    expect(hook.code).toBe('PECAN-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECAN-2654')
+    expect(screen.getByLabelText(/room code/i)).toHaveValue('PECAN-2654')
+  })
+
+  it('not found: a near miss offers the right word', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECKAN-2654')
+    expect(hook.code).toBe('PECKAN-2654')
+    await userEvent.click(screen.getByRole('button', { name: 'Did you mean PECAN?' }))
+    expect(hook.code).toBe('PECAN-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECAN-2654')
+  })
+
+  it('not found: retrying the same code looks it up again', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECAN-2654')
+    const before = hook.mounts
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Enter}')
+    expect(hook.code).toBe('PECAN-2654')
+    expect(hook.mounts).toBe(before + 1)
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Enter}')
+    expect(hook.mounts).toBe(before + 2)
+  })
+
+  it('a double-encoded link is decoded before reading the code', () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/pecan%25202654')
+    expect(hook.code).toBe('PECAN-2654')
+  })
+
+  it('a link with a spoken-style code still finds the room', () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/pecan%202654')
+    expect(hook.code).toBe('PECAN-2654')
   })
 
   it('shows loading', () => {
@@ -89,7 +136,7 @@ describe('Room', () => {
     setHook({ status: 'needs-join', join: vi.fn().mockRejectedValue(new Error('Room is full')) })
     renderRoom()
     expect(screen.getByLabelText('Shared screen')).toBeChecked()
-    await userEvent.click(screen.getByLabelText('Type my words'))
+    await userEvent.click(screen.getByLabelText('Type on my phone'))
     await userEvent.type(screen.getByLabelText(/name/i), 'Tina')
     await userEvent.click(screen.getByRole('button', { name: 'Join' }))
     expect(hook.value.join).toHaveBeenCalledWith('typist', 'Tina')
@@ -209,6 +256,7 @@ describe('Room', () => {
     setHook({ me, participants: [me] })
     renderRoom()
     expect(screen.getByText('Waiting for the game to start')).toBeInTheDocument()
+    expect(screen.getByText(/type the words you find on this phone/i)).toBeInTheDocument()
   })
 
   it('stubs by phase and kind', async () => {
