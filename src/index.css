@@ -144,7 +144,8 @@ button.suggestion { align-self: flex-start; font-weight: 700; }
 .code { align-self: flex-start; max-width: 100%; box-sizing: border-box; font-size: min(2.8rem, 7.4vw); font-weight: 800; letter-spacing: 0.08em; margin: 0; padding: 0.1em 0.4em 0.18em; white-space: nowrap; background: var(--tile-face); color: var(--tile-ink); border: 3px solid var(--tile-edge); border-radius: 16px; box-shadow: inset 0 -6px 0 var(--tile-shade), 0 4px 0 var(--tile-drop); }
 .link { word-break: break-all; color: var(--ink-2); }
 .household-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+/* Each household is a surface row with a divider-line border. */
+.household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 48px; padding: 4px 6px 4px 10px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 /* Quiet secondary actions (Remove, Leave room). Still 48 px tall for fingers. */
 button.subtle { font-size: 16px; font-weight: 600; min-width: 48px; padding: 4px 12px; border-color: var(--line); color: var(--ink-2); background: transparent; }
 @media (hover: hover) { button.subtle:enabled:hover { border-color: var(--line-strong); color: var(--ink); background: transparent; } }
@@ -205,13 +206,13 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 .dogear-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
 
 /* Results: left pane (board, room, households, ready), right pane (one scroll container of typist columns). */
-.results { position: fixed; inset: 0; display: flex; gap: 24px; padding: 24px; box-sizing: border-box; background: #fff; }
+.results { position: fixed; inset: 0; display: flex; gap: 24px; padding: 24px; box-sizing: border-box; background: var(--bg); }
 .results-side { flex: none; width: 260px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 .results-board { flex: none; width: 100%; }
 .results-board .board-wrap { width: 100%; }
 .results-board .tile { border-width: 2.5px; border-radius: 16%; padding-bottom: 2cqmin; box-shadow: inset 0 -2cqmin 0 var(--tile-shade), 0 2px 0 var(--tile-drop); }
 .results-info { display: flex; flex-direction: column; gap: 14px; }
-.results-room-label { margin: 0; font-size: 13px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.results-room-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-2); letter-spacing: 0.08em; text-transform: uppercase; }
 .results-room-code { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.04em; }
 .results-info .household-list li { font-size: 20px; }
 .results-info .household-list .muted { font-size: 16px; margin-top: 8px; }
@@ -224,12 +225,13 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 /* Subgrid: every header shares row 1, so all lists start at the same height even when a name wraps. */
 .results-col { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; min-width: var(--col-min); }
 /* The header is only as wide as its longest word needs, so long names wrap at spaces instead of widening the column.
-   The white shadow covers the gap under the rule so scrolled words never show through. */
-.results-name { position: sticky; top: 0; z-index: 1; width: min-content; min-width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 0 0 4px; background: #fff; box-shadow: 0 6px 0 #fff; border-bottom: 2px solid #222; font-size: var(--name-size); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
-.results-count { color: #888; font-weight: 400; font-size: var(--count-size); }
+   The shadow (in the page colour, same as the container) covers the gap under the rule so scrolled words never show through. */
+.results-name { position: sticky; top: 0; z-index: 1; width: min-content; min-width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 0 0 4px; background: var(--bg); box-shadow: 0 6px 0 var(--bg); border-bottom: 3px solid var(--ink); font-size: var(--name-size); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
+.results-count { color: var(--ink-muted); font-weight: 600; font-size: var(--count-size); }
 .results-list { list-style: none; margin: 0; padding: 0 0 12px; font-size: var(--word-size); line-height: 1.45; white-space: nowrap; }
-.results-list b { font-weight: 800; }
-.results-list s { color: #aaa; font-weight: 400; }
+/* Unique words: ink, heavy. Shared words: muted, regular weight, struck through (never colour alone). */
+.results-list b { font-weight: 800; color: var(--unique-word); letter-spacing: 0.02em; }
+.results-list s { color: var(--shared-word); font-weight: 400; text-decoration-thickness: 2px; letter-spacing: 0.02em; }
 .results-words-large { --word-size: 20px; --name-size: 20px; --count-size: 16px; --col-min: 120px; --col-gap: 18px; }
 .results-words-small { --word-size: 15px; --name-size: 15px; --count-size: 13px; --col-min: 72px; --col-gap: 12px; }
 
