@@ -135,7 +135,7 @@ describe('Room', () => {
     r.unmount()
     setHook({ me: t, participants: [h, t], phase: 'countdown' })
     const r2 = renderRoom()
-    expect(screen.getByTestId('typist-stub')).toHaveTextContent('countdown')
+    expect(screen.getByText(/Get ready/)).toBeInTheDocument()
     r2.unmount()
     setHook({ me: t, participants: [h, t], phase: 'results' })
     renderRoom()

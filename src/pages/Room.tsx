@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import HouseholdList from '../components/HouseholdList'
 import { useRoom } from '../lib/useRoom'
+import { supabase } from '../lib/supabase'
 import InGame from './InGame'
 import JoinForm from './JoinForm'
 import ResultsStub from './Results'
-import TypistStub from './Typist'
+import Typist from './Typist'
 
 type Room = ReturnType<typeof useRoom>
 
@@ -67,6 +68,10 @@ export default function Room() {
   if (status === 'needs-join') return <JoinForm onJoin={room.join} />
 
   const isTypist = me?.kind === 'typist'
+  const loadOwnWords = async () => {
+    const { data } = await supabase.from('words').select('word').eq('room_code', code).eq('round', room.room?.round ?? 0).eq('participant_id', me?.id ?? '')
+    return (data ?? []).map((r: { word: string }) => r.word)
+  }
   switch (phase) {
     case 'lobby':
       return isTypist ? (
@@ -80,7 +85,7 @@ export default function Room() {
     case 'countdown':
     case 'playing':
     case 'locked':
-      return isTypist ? <TypistStub phase={phase} code={code} /> : <InGame code={code} room={room} />
+      return isTypist ? <Typist room={room} loadOwnWords={loadOwnWords} /> : <InGame code={code} room={room} />
     default:
       return <ResultsStub participants={participants} me={me} onToggleReady={() => void actions.setReady(!me?.ready)} />
   }
