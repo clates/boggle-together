@@ -1,5 +1,5 @@
 begin;
-select plan(27);
+select plan(28);
 
 -- Fixed users (id equals auth.uid())
 -- u1 creates/joins, u2 is an outsider, u3.. fill rooms.
@@ -50,14 +50,18 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000006","r
 select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', '  ' || repeat('z', 24) || '  ')$$, 'padded 24-char name accepted');
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
 
--- capacity: fill to 4 households as superuser, then a 5th is refused
+-- households are unlimited: add 3 directly, then 5th and 6th join via join_room
 reset role;
 insert into public.participants (room_code, id, kind, name)
 select (select v from ctx where k = 'code'), ('00000000-0000-0000-0000-0000000001' || lpad(i::text, 2, '0'))::uuid, 'household', 'H' || i
 from generate_series(2, 4) i;
 set local role authenticated;
-select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Fifth')$$, null, 'Room is full', '5th household refused');
-select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', 'Typer')$$, 'typist still allowed with 4 households');
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000008","role":"authenticated"}';
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Fifth')$$, '5th household allowed');
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000009","role":"authenticated"}';
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Sixth')$$, '6th household allowed');
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}';
+select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', 'Typer')$$, 'typist allowed alongside households');
 
 -- rejoin keeps the stored kind (cannot sneak past the household cap) but updates the name
 select lives_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Renamed')$$, 'rejoin does not raise');
@@ -68,10 +72,10 @@ select is((select name from public.participants where id = '00000000-0000-0000-0
 reset role;
 insert into public.participants (room_code, id, kind, name)
 select (select v from ctx where k = 'code'), ('00000000-0000-0000-0000-0000000002' || lpad(i::text, 2, '0'))::uuid, 'typist', 'T' || i
-from generate_series(1, 17) i;
+from generate_series(1, 15) i;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000399","role":"authenticated"}';
-select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'typist', 'Late')$$, null, 'Room is full', '25th participant refused');
+select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Late')$$, null, 'Room is full', '25th participant refused');
 
 -- rate limit: user 7 already may create 10 per hour
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000007","role":"authenticated"}';

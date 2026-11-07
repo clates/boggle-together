@@ -155,10 +155,7 @@ begin
     update public.participants set name = v_name
       where room_code = v_code and id = v_uid;
   else
-    if (select count(*) from public.participants where room_code = v_code) >= 24
-       or (p_kind = 'household'
-           and (select count(*) from public.participants
-                where room_code = v_code and kind = 'household') >= 4) then
+    if (select count(*) from public.participants where room_code = v_code) >= 24 then
       raise exception 'Room is full';
     end if;
     insert into public.participants (room_code, id, kind, name)
