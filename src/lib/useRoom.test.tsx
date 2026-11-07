@@ -23,6 +23,8 @@ function makeDb(opts: { userId?: string } = {}) {
     failRooms: false,
     failClock: false,
     failSignIns: 0,
+    getSessionCalls: 0,
+    failGetSessionAt: 0,
     setAuth: vi.fn(),
   }
 }
@@ -88,7 +90,13 @@ function makeFake(shared?: Db) {
   }
   const client = {
     auth: {
-      getSession: async () => ({ data: { session: db.signIns ? { user: { id: db.userId }, access_token: 'tok' } : null } }),
+      getSession: async () => {
+        if (++db.getSessionCalls === db.failGetSessionAt) {
+          await new Promise((r) => setTimeout(r, 300)) // slow failure: setup's retry is scheduled after run's
+          throw new Error('storage')
+        }
+        return { data: { session: db.signIns ? { user: { id: db.userId }, access_token: 'tok' } : null } }
+      },
       signInAnonymously: async () => {
         if (db.failSignIns > 0) {
           db.failSignIns--
@@ -335,6 +343,25 @@ describe('useRoom', () => {
     await act(async () => { f.db.handlers.forEach((cb) => cb()) })
     await flush()
     expect(result.current.room?.round).toBe(9)
+    unmount()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('keeps setup retry alive when run fails first and setup fails later (no shared timer)', async () => {
+    const f = makeFake()
+    member(f)
+    f.db.failRooms = true // run: select fails -> run retry scheduled first
+    f.db.failGetSessionAt = 2 // setup: getSession fails after ensureSession -> setup retry scheduled later
+    const { result, unmount } = renderHook(() => useRoom('OAK-01', f.client))
+    await flush()
+    expect(f.db.handlers.length).toBe(0)
+    f.db.failRooms = false
+    await advance(1500) // run's retry (t=1000) fires before setup's (t=1300); it must not cancel setup's
+    expect(f.db.handlers.length).toBeGreaterThan(0)
+    f.db.rooms.set('OAK-01', room({ round: 4 }))
+    await act(async () => { f.db.handlers.forEach((cb) => cb()) })
+    await flush()
+    expect(result.current.room?.round).toBe(4)
     unmount()
     expect(vi.getTimerCount()).toBe(0)
   })
