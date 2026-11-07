@@ -246,6 +246,17 @@ describe('InGame sound (household)', () => {
     expect(localStorage.getItem('boggle.muted')).toBe('0')
   })
 
+  it('the buzzer keeps sounding when the screen flips to results right after it starts', () => {
+    const { unmount } = render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + ROUND_MS - 2_000 })} />)
+    const buzzer = ctx.live[ctx.live.length - 1]
+    expect(buzzer.frequency.value).toBe(220)
+    ctx.currentTime = buzzer.startAt! + 0.05
+    unmount() // Room swaps InGame for Results
+    expect(buzzer.cancelled).toBe(false)
+    expect(buzzer.stopCalls).toEqual([buzzer.startAt! + 0.9])
+    expect(buzzer.disconnected).toBe(false)
+  })
+
   it('locked screen after the buzzer schedules nothing', () => {
     render(<InGame code="ABCD" room={makeRoom({ phase: 'locked', now: () => T0 + ROUND_MS + 1 })} />)
     expect(ctx.oscillators).toHaveLength(0)

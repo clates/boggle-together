@@ -63,7 +63,7 @@ describe('audio engine scheduling', () => {
     expect(ctx.oscillators).toHaveLength(0)
   })
 
-  it('cancelAll stops and disconnects every node', () => {
+  it('cancelAll stops and disconnects every node that has not started', () => {
     const { ctx, engine } = setup()
     engine.schedule(CUES, () => S)
     engine.cancelAll()
@@ -194,5 +194,137 @@ describe('audio engine tones', () => {
     const master = ctx.gains[0]
     expect(master.connected).toContain(ctx.destination)
     expect(master.gain.value).toBeLessThanOrEqual(0.8)
+  })
+})
+
+describe('audio engine robustness', () => {
+  it('clamps cues closer than the output latency (and one exactly at now) to the audio clock, and plays them', () => {
+    const ctx = new FakeAudioContext({ currentTime: 0.05, outputLatency: 0.3 })
+    const { engine } = setup({ ctx })
+    const cues: Cue[] = [
+      { atMs: S, kind: 'tick' },
+      { atMs: S + 100, kind: 'go' },
+      { atMs: S + 5_000, kind: 'buzzer' },
+    ]
+    expect(() => engine.schedule(cues, () => S)).not.toThrow()
+    expect(ctx.live.map((o) => o.frequency.value)).toEqual([440, 880, 220])
+    expect(ctx.live[0].startAt).toBeCloseTo(0.05, 9)
+    expect(ctx.live[1].startAt).toBeCloseTo(0.05, 9)
+    expect(ctx.live[2].startAt).toBeCloseTo(0.05 + 5 - 0.3, 9) // far cues still get the latency lead
+    for (const o of ctx.oscillators) expect(o.startAt!).toBeGreaterThanOrEqual(ctx.currentTime)
+  })
+
+  it('a cue whose oscillator throws does not stop the later cues and nothing escapes', () => {
+    const ctx = new FakeAudioContext({ currentTime: 50 })
+    const real = ctx.createOscillator.bind(ctx)
+    let n = 0
+    ctx.createOscillator = () => {
+      const o = real()
+      if (++n === 2) o.start = () => {
+        throw new RangeError('boom')
+      }
+      return o
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { engine } = setup({ ctx })
+    expect(() => engine.schedule(CUES, () => S)).not.toThrow()
+    expect(ctx.oscillators.filter((o) => o.startAt !== null)).toHaveLength(CUES.length - 1)
+    expect(ctx.live[ctx.live.length - 1].frequency.value).toBe(220)
+    warn.mockRestore()
+  })
+
+  it('a context that throws everywhere never throws out of schedule, unlock, setMuted or cancelAll', async () => {
+    const ctx = new FakeAudioContext({ currentTime: 50, state: 'suspended' })
+    ctx.createOscillator = () => {
+      throw new Error('dead')
+    }
+    ctx.resume = () => {
+      throw new Error('dead too')
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { engine } = setup({ ctx })
+    expect(() => engine.schedule(CUES, () => S)).not.toThrow()
+    await expect(engine.unlock()).resolves.toBeUndefined()
+    ctx.state = 'running'
+    expect(() => engine.schedule(CUES, () => S)).not.toThrow()
+    expect(() => engine.setMuted(true)).not.toThrow()
+    expect(() => engine.setMuted(false)).not.toThrow()
+    expect(() => engine.cancelAll()).not.toThrow()
+    warn.mockRestore()
+  })
+})
+
+describe('audio engine re-planning', () => {
+  const GO_CTX = 50 + 4 // go tone (start_at = S + 4 s) on the context clock, scheduled at currentTime 50
+  const at = (ctx: FakeAudioContext, freq: number, t: number) => ctx.oscillators.filter((o) => o.frequency.value === freq && Math.abs(o.startAt! - t) < 0.05)
+
+  it('a re-plan during a sounding tone leaves it playing and does not start it again', () => {
+    const { ctx, engine } = setup()
+    engine.schedule(CUES, () => S)
+    const go = at(ctx, 880, GO_CTX)[0]
+    ctx.currentTime = GO_CTX + 0.1
+    // a clock resync that shifts the estimate by 30 ms: the go tone now looks 70 ms in the past... or ahead
+    engine.schedule(CUES, () => S + 4_100 - 30)
+    engine.schedule(CUES, () => S + 4_100 + 30)
+    expect(go.cancelled).toBe(false)
+    expect(go.stopCalls).toEqual([GO_CTX + 0.4])
+    expect(go.disconnected).toBe(false)
+    expect(at(ctx, 880, GO_CTX)).toHaveLength(1)
+  })
+
+  it('a re-plan replaces only cues that have not started', () => {
+    const { ctx, engine } = setup()
+    engine.schedule(CUES, () => S)
+    const ticks = ctx.oscillators.filter((o) => o.frequency.value === 440)
+    ctx.currentTime = 50 + 1.05 // first countdown tick (start - 3 s) is sounding
+    engine.schedule(CUES, () => S + 1_050)
+    expect(ticks[0].cancelled).toBe(false)
+    expect(ticks.slice(1).every((o) => o.cancelled)).toBe(true)
+    const freshTicks = ctx.live.filter((o) => o.frequency.value === 440)
+    expect(freshTicks).toHaveLength(3) // the sounding one plus two re-planned
+    expect(ctx.live).toHaveLength(CUES.length)
+  })
+
+  it('muting fades a sounding voice out over about 10 ms before stopping it', () => {
+    const { ctx, engine } = setup()
+    engine.schedule(CUES, () => S)
+    const go = at(ctx, 880, GO_CTX)[0]
+    ctx.currentTime = GO_CTX + 0.1
+    engine.setMuted(true)
+    expect(go.cancelled).toBe(false) // not an abrupt stop()
+    const ev = voiceOf(go).gain.gain.events
+    const last = ev[ev.length - 1]
+    expect(last).toMatchObject({ kind: 'ramp', value: 0 })
+    expect(last.time - ctx.currentTime).toBeGreaterThanOrEqual(0.005)
+    expect(last.time - ctx.currentTime).toBeLessThanOrEqual(0.02)
+    expect(ev.some((e) => e.kind === 'cancel' && e.time === ctx.currentTime)).toBe(true)
+    expect(go.stopAt!).toBeGreaterThanOrEqual(last.time)
+    expect(go.stopAt!).toBeLessThan(GO_CTX + 0.4)
+    // not-yet-started voices are simply cancelled
+    expect(ctx.oscillators.filter((o) => o.startAt! > ctx.currentTime).every((o) => o.cancelled)).toBe(true)
+  })
+
+  it('a round change fades out a tone of the old round', () => {
+    const { ctx, engine } = setup()
+    engine.schedule(CUES, () => S)
+    const go = at(ctx, 880, GO_CTX)[0]
+    ctx.currentTime = GO_CTX + 0.1
+    engine.cancelAll()
+    const next = cueTimeline({ start_at: new Date(S + 60_000).toISOString(), ends_at: new Date(S + 72_000).toISOString() })
+    engine.schedule(next, () => S + 4_100)
+    expect(go.stopAt!).toBeLessThan(GO_CTX + 0.4)
+    expect(go.stopAt! - ctx.currentTime).toBeLessThanOrEqual(0.02)
+  })
+
+  it('cancelAll (leaving the round for results) lets a tone that already started ring out', () => {
+    const { ctx, engine } = setup()
+    engine.schedule(CUES, () => S)
+    const buzzer = ctx.oscillators[ctx.oscillators.length - 1]
+    ctx.currentTime = buzzer.startAt! + 0.05
+    engine.cancelAll()
+    expect(buzzer.cancelled).toBe(false)
+    expect(buzzer.stopCalls).toEqual([buzzer.startAt! + 0.9])
+    expect(buzzer.disconnected).toBe(false)
+    expect(voiceOf(buzzer).gain.gain.events.some((e) => e.kind === 'cancel')).toBe(false)
   })
 })

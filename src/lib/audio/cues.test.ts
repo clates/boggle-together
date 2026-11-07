@@ -62,6 +62,12 @@ describe('cueTimeline', () => {
     for (const f of forms) expect(cueTimeline(f)).toEqual(expected)
   })
 
+  it('reads Postgres microsecond timestamps', () => {
+    const cues = cueTimeline({ start_at: '2026-11-07T18:42:31.807465+00:00', ends_at: '2026-11-07T18:45:31.807465+00:00' })
+    expect(cues.find((c) => c.kind === 'go')!.atMs).toBe(Date.parse('2026-11-07T18:42:31.807Z'))
+    expect(cues).toHaveLength(17)
+  })
+
   it('returns nothing for unparseable or inverted times', () => {
     expect(cueTimeline({ start_at: 'nope', ends_at: iso(START) })).toEqual([])
     expect(cueTimeline(room(START, START - 1))).toEqual([])

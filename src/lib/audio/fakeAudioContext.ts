@@ -1,19 +1,28 @@
 // Test helper: a recording stand-in for the bits of the Web Audio API the engine uses.
 
-type ParamEvent = { kind: 'set' | 'ramp'; value: number; time: number }
+type ParamEvent = { kind: 'set' | 'ramp' | 'cancel'; value: number; time: number }
+
+// Like a browser: negative times are a RangeError.
+function checkTime(t: number) {
+  if (!(t >= 0)) throw new RangeError(`negative or invalid time ${t}`)
+}
 
 export class FakeParam {
   value = 0
   events: ParamEvent[] = []
   setValueAtTime(value: number, time: number) {
+    checkTime(time)
     this.events.push({ kind: 'set', value, time })
     return this
   }
   linearRampToValueAtTime(value: number, time: number) {
+    checkTime(time)
     this.events.push({ kind: 'ramp', value, time })
     return this
   }
-  cancelScheduledValues() {
+  cancelScheduledValues(time: number) {
+    checkTime(time)
+    this.events.push({ kind: 'cancel', value: 0, time })
     return this
   }
   get peak() {
@@ -50,15 +59,22 @@ export class FakeOscillator extends FakeNode {
   stopAt: number | null = null
   /** stop() calls without a time: a cancel */
   cancelled = false
+  /** every stop(when) time, in order */
+  stopCalls: number[] = []
   onended: (() => void) | null = null
   start(when = 0) {
     if (this.startAt !== null) throw new Error('start called twice')
+    checkTime(when)
     this.startAt = when
   }
   stop(when?: number) {
     if (this.startAt === null) throw new Error('stop before start')
     if (when === undefined) this.cancelled = true
-    else this.stopAt = when
+    else {
+      checkTime(when)
+      this.stopAt = when
+      this.stopCalls.push(when)
+    }
   }
 }
 
@@ -72,11 +88,18 @@ export class FakeAudioContext {
   onstatechange: (() => void) | null = null
   /** whether resume() works (a real browser only allows it during a user gesture) */
   canResume: boolean
+  outputLatency?: number
 
-  constructor({ currentTime = 0, state = 'running', canResume = true }: { currentTime?: number; state?: 'suspended' | 'running'; canResume?: boolean } = {}) {
+  constructor({
+    currentTime = 0,
+    state = 'running',
+    canResume = true,
+    outputLatency,
+  }: { currentTime?: number; state?: 'suspended' | 'running'; canResume?: boolean; outputLatency?: number } = {}) {
     this.currentTime = currentTime
     this.state = state
     this.canResume = canResume
+    this.outputLatency = outputLatency
   }
 
   resume() {
@@ -117,7 +140,8 @@ export function voiceOf(o: FakeOscillator) {
     type: o.type,
     frequency: o.frequency.value,
     start: o.startAt!,
-    duration: o.stopAt! - o.startAt!,
+    /** as first scheduled (a later fade-out stop does not change it) */
+    duration: (o.stopCalls[0] ?? o.stopAt!) - o.startAt!,
     peak: gain.gain.peak,
     gain,
   }
