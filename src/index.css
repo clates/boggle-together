@@ -128,7 +128,7 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
    100dvh without it), so an open keyboard shrinks the layout instead of covering it. It is a size
    container: the board is the largest square that leaves --typist-reserve below it for the input
    and the list header, and at most 55% of the height. The list takes what is left and scrolls. */
-.typist { position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: #fff; container: typist / size; --top: 0px; --typist-reserve: 158px; }
+.typist { max-width: none; margin: 0; padding: 0; display: block; gap: 0; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: #fff; container: typist / size; --top: 0px; --typist-reserve: 158px; }
 .typist-locked { --typist-reserve: 204px; }
 .typist-layout { position: relative; height: 100%; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; --tb: max(0px, min(100cqw - 24px, 55cqh, 100cqh - var(--typist-reserve))); }
 .typist-board { flex: none; align-self: center; width: var(--tb); height: var(--tb); }

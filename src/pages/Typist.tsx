@@ -27,7 +27,7 @@ export default function Typist({
   loadOwnWords?: () => Promise<string[]>
 }) {
   const { phase, actions, board, serverNowMs } = room
-  const rootRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLElement>(null)
   useVisualViewport(rootRef)
   const [rotation, setRotation] = useState<Rotation>(0)
   const rotate = () => setRotation((r) => (((r + 90) % 360) as Rotation))
@@ -99,10 +99,10 @@ export default function Typist({
   const p = phase === 'playing' ? progress(times, now) : 0
 
   return (
-    <div ref={rootRef} className={`typist typist-${phase}`} data-testid="typist">
+    <main ref={rootRef} className={`typist typist-${phase}`} data-testid="typist">
       <TimerFill progress={p} />
       {phase === 'countdown' ? (
-        <Countdown startAt={times.start_at ? Date.parse(times.start_at) : NaN} now={now} />
+        <Countdown startAt={times.start_at ? Date.parse(times.start_at) : NaN} now={now} line="Get ready to type" />
       ) : (
         <div className="typist-layout">
           <div className="typist-board">
@@ -153,6 +153,6 @@ export default function Typist({
           </div>
         </div>
       )}
-    </div>
+    </main>
   )
 }

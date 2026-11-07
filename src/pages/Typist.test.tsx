@@ -161,11 +161,20 @@ describe('Typist', () => {
   it('countdown: whole-second number and pens line, no board, no fill, no input', () => {
     render(<Typist room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
     expect(screen.getByTestId('countdown')).toHaveTextContent(/^3$/)
-    expect(screen.getByText('Get your pens ready')).toBeTruthy()
+    expect(screen.getByText('Get ready to type')).toBeTruthy()
+    expect(screen.queryByText(/pens/i)).toBeNull()
     expect(screen.queryByTestId('board')).toBeNull()
     expect(screen.queryByTestId('tile')).toBeNull()
     expect(screen.queryByTestId('fill')).toBeNull()
     expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('keeps a main landmark in every in-round phase', () => {
+    for (const [phase, now] of [['countdown', T0 - 2500], ['playing', T0 + 1000], ['locked', T0 + ROUND_MS + 500]] as const) {
+      const r = render(<Typist room={makeRoom({ phase, now })} />)
+      expect(screen.getByRole('main')).toHaveAttribute('data-testid', 'typist')
+      r.unmount()
+    }
   })
 
   it('locked: board stays, fill is gone, no clock', () => {
