@@ -165,7 +165,7 @@ button.danger { min-width: 64px; }
 /* --board-size fills the shorter side, but on near-square screens it leaves --tab-room (both sides,
    along the longer axis) so the dog-ear tab never covers the top-right tile. */
 /* --top / --bottom reserve strips for the sound prompt and the locked bar; the board fits between. */
-.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
+.ingame { position: fixed; inset: 0; background: var(--bg); overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
 /* --fill / --fill-edge come from TimerFill (src/lib/drain.ts): the colour, and a darker waterline along the top. */
 .fill { position: absolute; left: 0; right: 0; bottom: 0; background-color: var(--fill); box-shadow: inset 0 var(--timer-edge-width) 0 var(--fill-edge); transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
 /* The last 20%: faint static stripes, so the end is visible without relying on red. */
@@ -174,25 +174,34 @@ button.danger { min-width: 64px; }
 .ingame .board-wrap { width: var(--board-size); height: var(--board-size); margin: 0; flex: none; }
 .board-blank { width: var(--board-size); height: var(--board-size); }
 .ingame-locked { --bottom: 150px; }
-.locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; }
-.pens-down { font-size: 2.6rem; font-weight: 900; min-height: 104px; padding: 12px 56px; border-radius: 18px; border: 0; background: #b3261e; color: #fff; box-shadow: 0 6px 0 #7a1712; }
-.pens-down:active { transform: translateY(3px); box-shadow: 0 3px 0 #7a1712; }
+.locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; background: var(--surface); border-top: 2px solid var(--line); }
+/* Pens down! is the primary button, larger, with a deeper lip. */
+.pens-down { font-size: 2.6rem; font-weight: 900; min-height: 104px; padding: 12px 56px; border-radius: var(--radius-lg); }
+button.pens-down:enabled { box-shadow: 0 7px 0 var(--cta-primary-edge); }
+button.pens-down:enabled:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--cta-primary-edge); }
+button.pens-down:focus-visible { box-shadow: 0 7px 0 var(--cta-primary-edge), var(--focus-ring); }
 .waiting { font-size: 1.8rem; font-weight: 800; margin: 0; }
 .show-results { font-size: 1.3rem; font-weight: 700; min-height: 64px; }
 .locked-bar .error { flex-basis: 100%; text-align: center; }
 .countdown { position: absolute; inset: var(--top) 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; }
 .countdown-number { font-size: 55vmin; font-weight: 900; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
-.countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: #444; }
+.countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: var(--ink-2); }
 /* Shown when the browser is holding sound back (e.g. after a refresh): a top strip, clear of the board and the dog-ear. */
 .ingame-sound-prompt { --top: 84px; }
 .sound-prompt { position: absolute; top: 0; left: 0; right: 64px; height: 84px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 12px; box-sizing: border-box; }
-.sound-enable { font-size: 1.2rem; font-weight: 800; min-height: 48px; padding: 6px 20px; border-radius: 12px; border: 2px solid #222; background: #ffe680; color: #222; }
-.sound-note { margin: 0; font-size: 0.85rem; color: #555; text-align: center; }
+button.sound-enable, button.sound-enable:enabled:hover, button.sound-enable:enabled:active { font-size: 1.2rem; font-weight: 800; min-height: 48px; padding: 6px 20px; border: 2px solid var(--ink); background: var(--warning-soft); color: var(--ink); }
+button.sound-enable:enabled:active { transform: translateY(2px); }
+/* ink, not ink-2: the strip can sit over the full (green) fill */
+.sound-note { margin: 0; font-size: 0.85rem; color: var(--ink); text-align: center; }
 .dogear { position: absolute; top: 0; right: 0; z-index: 2; }
 /* A 56 px tap target (invisible) around a 44 px folded corner. */
-.dogear-tab { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
-.dogear-tab::before { content: ''; position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: 0 0 0 10px; background: linear-gradient(to bottom left, transparent 50%, #e2e2e2 50%, #fff 100%); filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.3)); }
-.dogear-panel { position: absolute; top: 60px; right: 12px; width: max-content; background: #fff; border: 2px solid #222; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
+.dogear-tab, button.dogear-tab:enabled:hover, button.dogear-tab:enabled:active { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+/* An ivory flap (tile colours) with an ink edge, so it reads on the page blue and on every timer colour. */
+.dogear-tab::before { content: ''; position: absolute; top: 0; right: 0; width: 46px; height: 46px; border-radius: 0 0 0 10px; background: linear-gradient(to bottom left, transparent 50%, var(--tile-shade) 50%, var(--tile-face) 100%); filter: drop-shadow(-2px 2px 0 var(--ink)) drop-shadow(-2px 3px 4px var(--shadow-flap)); }
+/* Inset ring: the tab sits in the corner, so an outer ring would be cut off by the screen edge. */
+button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0 0 0 3px var(--focus), inset 0 0 0 6px var(--focus-inner); }
+.dogear-panel { position: absolute; top: 62px; right: 12px; width: max-content; background: var(--surface); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-panel); }
+.dogear-panel .muted { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .dogear-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
 
 /* Results: left pane (board, room, households, ready), right pane (one scroll container of typist columns). */
