@@ -5,7 +5,7 @@ import { useRoom } from '../lib/useRoom'
 import { supabase } from '../lib/supabase'
 import InGame from './InGame'
 import JoinForm from './JoinForm'
-import ResultsStub from './Results'
+import Results from './Results'
 import Typist from './Typist'
 
 type Room = ReturnType<typeof useRoom>
@@ -55,7 +55,7 @@ function Lobby({ code, room }: { code: string; room: Room }) {
 export default function Room() {
   const { code = '' } = useParams()
   const room = useRoom(code)
-  const { status, me, phase, participants, actions } = room
+  const { status, me, phase } = room
 
   if (status === 'loading') return <main><p className="muted">Loading...</p></main>
   if (status === 'not-found')
@@ -87,6 +87,6 @@ export default function Room() {
     case 'locked':
       return isTypist ? <Typist room={room} loadOwnWords={loadOwnWords} /> : <InGame code={code} room={room} />
     default:
-      return <ResultsStub participants={participants} me={me} onToggleReady={() => void actions.setReady(!me?.ready)} />
+      return <Results code={code} room={room} />
   }
 }

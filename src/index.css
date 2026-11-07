@@ -44,3 +44,47 @@ form { display: flex; flex-direction: column; gap: 12px; }
 .dogear-tab { display: block; width: 64px; height: 64px; min-height: 0; padding: 0; border: 0; border-radius: 0 0 0 12px; background: linear-gradient(to bottom left, transparent 50%, #e2e2e2 50%, #fff 100%); filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.3)); }
 .dogear-panel { position: absolute; top: 72px; right: 12px; width: max-content; background: #fff; border: 2px solid #222; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
 .dogear-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
+
+/* Results: left pane (board, room, households, ready), right pane (one scroll container of typist columns). */
+.results { position: fixed; inset: 0; display: flex; gap: 24px; padding: 24px; box-sizing: border-box; background: #fff; }
+.results-side { flex: none; width: 260px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.results-board { flex: none; width: 100%; }
+.results-board .board-wrap { width: 100%; }
+.results-board .tile { border-width: 3px; }
+.results-info { display: flex; flex-direction: column; gap: 14px; }
+.results-room-label { margin: 0; font-size: 13px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.results-room-code { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.04em; }
+.results-info .household-list li { font-size: 20px; }
+.results-info .household-list .muted { font-size: 16px; margin-top: 8px; }
+.results-controls { display: flex; flex-direction: column; gap: 10px; }
+.results-controls button.primary { font-size: 22px; font-weight: 700; }
+.results-note { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; font-size: 24px; }
+.results-note p { margin: 0; }
+.results-words { flex: 1; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.results-cols { display: grid; grid-auto-flow: column; grid-auto-columns: auto; grid-template-rows: auto 1fr; column-gap: var(--col-gap); width: max-content; min-width: 100%; }
+/* Subgrid: every header shares row 1, so all lists start at the same height even when a name wraps. */
+.results-col { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; min-width: var(--col-min); }
+/* The header is only as wide as its longest word needs, so long names wrap at spaces instead of widening the column.
+   The white shadow covers the gap under the rule so scrolled words never show through. */
+.results-name { position: sticky; top: 0; z-index: 1; width: min-content; min-width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 0 0 4px; background: #fff; box-shadow: 0 6px 0 #fff; border-bottom: 2px solid #222; font-size: var(--name-size); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
+.results-count { color: #888; font-weight: 400; font-size: var(--count-size); }
+.results-list { list-style: none; margin: 0; padding: 0 0 12px; font-size: var(--word-size); line-height: 1.45; white-space: nowrap; }
+.results-list b { font-weight: 800; }
+.results-list s { color: #aaa; font-weight: 400; }
+.results-words-large { --word-size: 20px; --name-size: 20px; --count-size: 16px; --col-min: 120px; --col-gap: 18px; }
+.results-words-small { --word-size: 15px; --name-size: 15px; --count-size: 13px; --col-min: 72px; --col-gap: 12px; }
+
+/* Portrait and phones: stacked. Board small beside the room info, then the same word container below. */
+@media (orientation: portrait), (max-width: 700px) {
+  .results { flex-direction: column; gap: 16px; padding: 16px; }
+  .results-side { width: auto; flex-direction: row; align-items: flex-start; overflow: visible; }
+  .results-board { width: min(40vw, 260px); }
+  .results-info { flex: 1; min-width: 0; gap: 10px; }
+  .results-words, .results-note { flex: 1; min-height: 0; }
+}
+@media (max-width: 700px) {
+  .results-info .household-list li { font-size: 17px; }
+  .results-info .household-list ul { gap: 4px; }
+  .results-controls button { min-height: 44px; font-size: 18px; }
+  .results-controls button.primary { font-size: 18px; }
+}

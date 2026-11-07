@@ -6,6 +6,7 @@ import type { Participant } from '../lib/useRoom'
 
 const hook = vi.hoisted(() => ({ value: {} as any }))
 vi.mock('../lib/useRoom', () => ({ useRoom: () => hook.value }))
+vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
 import Room from './Room'
 
@@ -139,6 +140,6 @@ describe('Room', () => {
     r2.unmount()
     setHook({ me: t, participants: [h, t], phase: 'results' })
     renderRoom()
-    await waitFor(() => expect(screen.getByTestId('results-stub')).toHaveTextContent('Results'))
+    await waitFor(() => expect(screen.getByTestId('results')).toBeInTheDocument())
   })
 })
