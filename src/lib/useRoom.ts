@@ -29,7 +29,7 @@ const BOARD_RETRY_MS = 250
 const TICK_MS = 100
 const BENIGN = 'Round already in progress'
 
-async function sampleClock(client: Client): Promise<number> {
+async function sampleClock(client: Client): Promise<number | null> {
   const samples: ClockSample[] = []
   for (let i = 0; i < CLOCK_SAMPLES; i++) {
     const sentMs = Date.now()
@@ -38,8 +38,14 @@ async function sampleClock(client: Client): Promise<number> {
     if (error || typeof data !== 'string') continue
     samples.push({ sentMs, receivedMs, serverMs: Date.parse(data) })
   }
-  return estimateOffset(samples)
+  return samples.length ? estimateOffset(samples) : null
 }
+
+let topicCounter = 0
+
+type Loaded =
+  | { kind: 'absent'; uid: string; exists: boolean }
+  | { kind: 'present'; uid: string; room: RoomRow; participants: Participant[] }
 
 export function useRoom(code: string, client: Client = supabase) {
   const [status, setStatus] = useState<RoomStatus>('loading')
@@ -51,57 +57,122 @@ export function useRoom(code: string, client: Client = supabase) {
   const [, setTick] = useState(0)
   const offsetRef = useRef(0)
   offsetRef.current = offset
+  const reloadRef = useRef<() => Promise<void>>(async () => {})
 
   const serverNowMs = useCallback(() => Date.now() + offsetRef.current, [])
 
-  const load = useCallback(async () => {
-    const id = await ensureSession(client)
-    const { data: roomRow } = await client.from('rooms').select('*').eq('code', code).maybeSingle()
-    if (!roomRow) {
-      const { data: exists } = await client.rpc('room_exists', { p_code: code })
-      setUid(id)
-      setRoom(null)
-      setParticipants([])
-      setStatus(exists ? 'needs-join' : 'not-found')
-      return
-    }
-    const { data: parts } = await client.from('participants').select('*').eq('room_code', code)
-    const list = (parts ?? []) as Participant[]
-    setUid(id)
-    setRoom(roomRow as RoomRow)
-    setParticipants(list)
-    setStatus(list.some((p) => p.id === id) ? 'ready' : 'needs-join')
-  }, [client, code])
-
-  // initial load and realtime
+  // Room state: load, realtime, reload on SUBSCRIBED / event / tab visible. Only the latest load applies.
   useEffect(() => {
     let cancelled = false
+    let reqId = 0
+    let attempts = 0
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
+    let channel: ReturnType<Client['channel']> | undefined
+    let authSub: { unsubscribe: () => void } | undefined
     setStatus('loading')
-    const run = () => {
-      load().catch(() => {
-        if (!cancelled) setStatus((s) => (s === 'loading' ? 'not-found' : s))
-      })
+    setRoom(null)
+    setParticipants([])
+
+    const fetchState = async (): Promise<Loaded> => {
+      const id = await ensureSession(client)
+      const r = await client.from('rooms').select('*').eq('code', code).maybeSingle()
+      if (r.error) throw new Error(r.error.message)
+      if (!r.data) {
+        const ex = await client.rpc('room_exists', { p_code: code })
+        if (ex.error) throw new Error(ex.error.message)
+        return { kind: 'absent', uid: id, exists: !!ex.data }
+      }
+      const p = await client.from('participants').select('*').eq('room_code', code)
+      if (p.error) throw new Error(p.error.message)
+      return { kind: 'present', uid: id, room: r.data as RoomRow, participants: (p.data ?? []) as Participant[] }
     }
-    run()
-    const channel = client
-      .channel(`room:${code}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `code=eq.${code}` }, run)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `room_code=eq.${code}` }, run)
-      .subscribe()
+
+    const run = async (): Promise<void> => {
+      const my = ++reqId
+      clearTimeout(retryTimer)
+      try {
+        const res = await fetchState()
+        if (cancelled || my !== reqId) return
+        attempts = 0
+        setUid(res.uid)
+        if (res.kind === 'absent') {
+          setRoom(null)
+          setParticipants([])
+          setStatus(res.exists ? 'needs-join' : 'not-found')
+          return
+        }
+        setRoom(res.room)
+        setParticipants(res.participants)
+        setStatus(res.participants.some((p) => p.id === res.uid) ? 'ready' : 'needs-join')
+      } catch {
+        if (cancelled || my !== reqId) return
+        const delay = Math.min(1000 * 2 ** attempts, 5000)
+        attempts++
+        retryTimer = setTimeout(run, delay)
+      }
+    }
+    reloadRef.current = run
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void run()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    // Subscribe only after the session exists, with its token on the realtime client.
+    const setup = async () => {
+      try {
+        await ensureSession(client)
+        const { data } = await client.auth.getSession()
+        if (cancelled) return
+        const token = data.session?.access_token
+        if (token) client.realtime?.setAuth(token)
+        const sub = client.auth.onAuthStateChange?.((_e, session) => {
+          if (session?.access_token) client.realtime?.setAuth(session.access_token)
+        })
+        authSub = sub?.data.subscription
+        channel = client
+          .channel(`room:${code}:${++topicCounter}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `code=eq.${code}` }, () => void run())
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `room_code=eq.${code}` }, () => void run())
+          .subscribe((s) => {
+            if (s === 'SUBSCRIBED') void run()
+          })
+      } catch {
+        if (!cancelled) retryTimer = setTimeout(setup, 1000)
+      }
+    }
+    void run()
+    void setup()
+
     return () => {
       cancelled = true
-      client.removeChannel(channel)
+      clearTimeout(retryTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
+      authSub?.unsubscribe()
+      if (channel) void client.removeChannel(channel)
     }
-  }, [client, code, load])
+  }, [client, code])
 
   // clock sync on mount and when the tab becomes visible again after being hidden
   useEffect(() => {
     let cancelled = false
     let wasHidden = false
+    let established = false
+    let timer: ReturnType<typeof setTimeout> | undefined
     const sync = () => {
-      sampleClock(client).then((o) => {
-        if (!cancelled) setOffset(o)
-      }, () => {})
+      clearTimeout(timer)
+      sampleClock(client).then(
+        (o) => {
+          if (cancelled) return
+          if (o !== null) {
+            established = true
+            setOffset(o)
+          } else if (!established) timer = setTimeout(sync, 2000)
+        },
+        () => {
+          if (!cancelled && !established) timer = setTimeout(sync, 2000)
+        },
+      )
     }
     sync()
     const onVisibility = () => {
@@ -114,6 +185,7 @@ export function useRoom(code: string, client: Client = supabase) {
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
       cancelled = true
+      clearTimeout(timer)
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [client])
@@ -169,9 +241,9 @@ export function useRoom(code: string, client: Client = supabase) {
     async (kind: 'household' | 'typist', name: string) => {
       const { error } = await client.rpc('join_room', { p_code: code, p_kind: kind, p_name: name })
       if (error) throw new Error(error.message)
-      await load()
+      await reloadRef.current()
     },
-    [client, code, load],
+    [client, code],
   )
 
   const actions = useMemo(
