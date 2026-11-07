@@ -1,23 +1,6 @@
-import { Route, Routes, useParams } from 'react-router-dom'
-
-function Home() {
-  return (
-    <main>
-      <h1>Boggle Together</h1>
-      <button type="button">Start a room</button>
-      <button type="button">Join a room</button>
-    </main>
-  )
-}
-
-function Room() {
-  const { code } = useParams()
-  return (
-    <main>
-      <p>Room {code}</p>
-    </main>
-  )
-}
+import { Route, Routes } from 'react-router-dom'
+import Home from './pages/Home'
+import Room from './pages/Room'
 
 export default function App() {
   return (

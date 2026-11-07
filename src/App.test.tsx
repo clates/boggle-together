@@ -1,7 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import App from './App'
+
+vi.mock('./lib/useRoom', () => ({ useRoom: () => ({ status: 'not-found' }) }))
 
 describe('App', () => {
   it('renders Home buttons at /', () => {
@@ -14,12 +16,12 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Join a room' })).toBeInTheDocument()
   })
 
-  it('renders a placeholder at /r/:code', () => {
+  it('renders the room route at /r/:code', () => {
     render(
       <MemoryRouter initialEntries={['/r/ABCD']}>
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByText(/ABCD/)).toBeInTheDocument()
+    expect(screen.getByText('Room not found')).toBeInTheDocument()
   })
 })
