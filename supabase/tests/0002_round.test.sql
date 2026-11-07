@@ -1,5 +1,5 @@
 begin;
-select plan(77);
+select plan(80);
 
 -- Fixtures: room A (4 households a1-a4, typists b1,b2), room B (4 households, typist b1)
 insert into public.rooms (code, created_by) values ('ROOM-A', '00000000-0000-0000-0000-0000000000a1'), ('ROOM-B', '00000000-0000-0000-0000-0000000000a1');
@@ -205,5 +205,21 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","r
 select lives_ok($$select public.show_results('ROOM-A')$$, 'show_results works at ends_at + 30 s');
 reset role;
 select ok((select results_at = now() from public.rooms where code = 'ROOM-A'), 'show_results sets results_at');
+-- the 2 s grace is purely time-based: a buzzer-beater word still counts after results open
+update public.rooms set ends_at = now() - interval '1 second' where code = 'ROOM-A';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
+select lives_ok($$select public.submit_word('ROOM-A', 'grace')$$, 'accepted inside the grace even after results open');
+reset role;
+update public.rooms set ends_at = now() - interval '2 seconds' where code = 'ROOM-A';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
+select lives_ok($$select public.submit_word('ROOM-A', 'edge')$$, 'accepted at exactly ends_at + 2 s');
+reset role;
+update public.rooms set ends_at = now() - interval '2.5 seconds' where code = 'ROOM-A';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
+select throws_ok($$select public.submit_word('ROOM-A', 'after')$$, null, 'Too late', 'rejected after the grace whether or not results are open');
+reset role;
 select * from finish();
 rollback;

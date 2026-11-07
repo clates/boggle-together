@@ -198,7 +198,8 @@ begin
   if v_room.start_at is null or now() < v_room.start_at then
     raise exception 'Not started';
   end if;
-  if v_room.results_at is not null or now() > v_room.ends_at + interval '2 seconds' then
+  -- purely time-based: words typed in the 2 s grace count even if pens down already opened results
+  if now() > v_room.ends_at + interval '2 seconds' then
     raise exception 'Too late';
   end if;
   if v_word !~ '^[A-Z]{3,20}$' then
