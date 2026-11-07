@@ -101,6 +101,7 @@ export default function Room() {
       return isTypist ? (
         <main>
           <h1>Waiting for the game to start</h1>
+          <p>When the round starts, type the words you find on this phone.</p>
           <p className="code">{code}</p>
           <LeaveRoom onLeave={leave} />
         </main>

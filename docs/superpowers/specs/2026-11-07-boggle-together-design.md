@@ -44,7 +44,9 @@ The app is an open resource. Anyone can start a room and play, and the code is p
 
 ### 1. Home
 
-Two actions: **Start a room** and **Join a room** (enter a code). Nothing else.
+Two actions: **Start a room** and **Join a room** (enter a code), plus a sentence or two on what the app is for. Nothing else.
+
+Room codes are mostly read out loud on the call ("pecan 2654"), so joining forgives how people say them. There is one code field: it uppercases as you type, adds the hyphen itself between the word and the digits, accepts spaces, commas or no separator at all, and pulls the code out of a pasted link or message. As soon as a word and four digits are in, the app goes straight into the room, with no extra button. If the word is not one of the room-code words but is one or two letters off a single one, it asks "Did you mean PECAN?" instead. If a code leads nowhere, the room page says "No room with the code ..." and lets you fix it in place. Room-code words are one or two syllables, easy to spell after hearing them, and chosen not to sound like each other (no homophones or near-rhymes); they are listed in `supabase/migrations/0005_room_code_words.sql`.
 
 ### 2. Room (lobby and post-round)
 
@@ -94,8 +96,8 @@ Mockups from the brainstorm are in `docs/superpowers/mockups/`. Treat them as in
 
 This part was not discussed in detail, so these are my calls.
 
-- A digital player joins the room on their own device using the same code or link and enters a name. They choose between "Shared screen" (the household display) and "Type my words".
-- During a round, a "Type my words" device shows a text box and the player's own list so far. Press Enter to add a word. Words are uppercased and de-duplicated, and anything shorter than 3 letters is ignored.
+- A digital player joins the room on their own device using the same code or link and enters a name. They choose between "Shared screen" (one device per household, usually a tablet or laptop in the middle of the table, showing the board for everyone around it) and "Type on my phone" (enter the words you find on your own phone; the app shows which of your words nobody else found). Each choice is a card with that one line of explanation. A link with `?m=type` (for a QR code) preselects "Type on my phone". The device remembers the last name and choice.
+- During a round, a "Type on my phone" device shows a text box and the player's own list so far. Press Enter to add a word. Words are uppercased and de-duplicated, and anything shorter than 3 letters is ignored.
 - A player sees only their own list during the round. Nobody sees anyone else's list until the post-round screen.
 - No validation against the dictionary or against the board in the MVP.
 - Digital players do not tap "Pens down!". Their words lock when time expires.
@@ -128,8 +130,8 @@ My calls (builder may change with reason):
 A reviewer read this document and asked what a builder couldn't guess. These are my answers, so Chris should check them.
 
 - **Households.** One "Shared screen" device is one household. It has a name, entered when it joins, and it is the unit that counts for Ready and Pens down. A household with a second screen can just join as a second household. Typists are separate participants. They are not attached to a household and they don't appear in the household list. They appear only as columns on the post-round screen. There is no cap on the number of households. Only the overall participant cap (24 per room, my call) applies.
-- **Typist devices do not show the board.** A typist reads the board off their household's shared screen and uses their own device only to type. This keeps the app from becoming a phone game. The typist device shows a text box and the player's own list, and no timer. It switches to the results when the post-round screen opens.
-  **Chris wants to revisit this one.** Treat it as provisional: build the typist device so showing the board on it later is a small change.
+- **Typist devices show the board and the timer.** A "Type on my phone" device shows the same board as the shared screens, and the draining timer color, alongside the text box and the player's own list. It switches to the results when the post-round screen opens.
+  *Decided by Chris, reversing the earlier provisional call that typist devices would not show the board (that version kept the phone to typing only, with no board and no timer).*
 - **Countdown audio (Chris's idea).** The pre-round countdown might play audio tones, which also helps households on a voice call. Not required for the first build. Leave room for it.
 - **No host.** The room creator has no special powers. Room codes are generated, not chosen.
 - **A stuck household must not freeze the game.** Any household may tap "Start anyway" once at least half of the households are ready. Likewise, the post-round screen opens when every household has confirmed Pens down, or when any household taps "Show results" 30 seconds after time expires.

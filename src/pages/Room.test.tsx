@@ -238,6 +238,7 @@ describe('Room', () => {
     setHook({ me, participants: [me] })
     renderRoom()
     expect(screen.getByText('Waiting for the game to start')).toBeInTheDocument()
+    expect(screen.getByText(/type the words you find on this phone/i)).toBeInTheDocument()
   })
 
   it('stubs by phase and kind', async () => {
