@@ -8,9 +8,23 @@ button.primary { background: #222; color: #fff; }
 button:disabled { opacity: 0.5; }
 label { display: flex; flex-direction: column; gap: 6px; }
 form { display: flex; flex-direction: column; gap: 12px; }
-.choices { display: flex; flex-direction: column; gap: 8px; }
-.choices label { flex-direction: row; align-items: center; gap: 10px; min-height: 48px; }
-.choices input { width: 24px; height: 24px; }
+/* Join form: the two ways to play, as cards (each a labelled radio). */
+.mode-cards { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.mode-cards legend { padding: 0; margin-bottom: 6px; }
+.mode-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid #bbb; border-radius: 12px; cursor: pointer; }
+.mode-card.selected { border-color: #222; }
+.mode-card input { width: 24px; height: 24px; margin: 3px 0 0; flex: none; }
+.mode-text { display: flex; flex-direction: column; gap: 4px; }
+.mode-title { font-weight: 700; }
+.mode-line { font-size: 16px; line-height: 1.4; color: #555; }
+/* Home and not-found: the room-code field. 16 px or more so iOS does not zoom on focus; the longest code (MUSHROOM-8888) fits a 360 px phone. */
+.intro { margin: 0; line-height: 1.45; }
+.code-form { gap: 8px; }
+input.code-input { font-size: max(16px, min(1.6rem, 7vw)); font-weight: 800; letter-spacing: 0.06em; min-height: 60px; width: 100%; box-sizing: border-box; }
+.code-help:empty { display: none; }
+button.suggestion { align-self: flex-start; font-weight: 700; }
+.not-found { font-size: 1.6rem; line-height: 1.25; }
+.nowrap { white-space: nowrap; }
 .error { color: #b00020; margin: 0; }
 .muted { color: #666; margin: 0; }
 /* sized so the longest code (e.g. MAHOGANY-8888) stays on one line from phones to tablets */
