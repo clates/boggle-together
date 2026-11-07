@@ -58,8 +58,11 @@ export default function CodeField({
     setValue(next.value)
     setHint(next.value === '' && /\d/.test(raw) ? 'Start with the word, then the four numbers.' : null)
     if (isComplete(next.value)) {
+      // A real word goes at once. Anything else only when typed at the end (the last digit), so
+      // editing the middle of a complete code never jumps away on a half-fixed word.
       const w = next.value.split('-')[0]
-      if (isKnownWord(w) || !suggestWord(w)) go(next.value)
+      const typedAtEnd = raw.length >= value.length && next.caret === next.value.length
+      if (isKnownWord(w) || (typedAtEnd && !suggestWord(w))) go(next.value)
     }
   }
 

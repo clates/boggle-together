@@ -118,3 +118,27 @@ describe('CodeField', () => {
     expect(onGo).toHaveBeenCalledExactlyOnceWith('PECAN-2653')
   })
 })
+
+describe('CodeField while editing a complete code', () => {
+  it('does not jump away on a half-fixed word in the middle', async () => {
+    const onGo = vi.fn()
+    render(<CodeField label="Room code" initial="PECAN-2655" onGo={onGo} />)
+    const input = screen.getByLabelText('Room code') as HTMLInputElement
+    input.focus()
+    input.setSelectionRange(5, 5) // PECAN|-2655
+    await userEvent.keyboard('{Backspace}{Backspace}{Backspace}') // PE-2655
+    await userEvent.keyboard('K') // PEK-2655
+    expect(onGo).not.toHaveBeenCalled()
+    await userEvent.keyboard('AN') // PEKAN: one edit from PECAN
+    expect(input).toHaveValue('PEKAN-2655')
+    expect(onGo).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Did you mean PECAN?' })).toBeInTheDocument()
+  })
+
+  it('Enter goes with a complete code (taking the suggestion if there is one)', async () => {
+    const onGo = vi.fn()
+    render(<CodeField label="Room code" initial="PEKAN-2655" onGo={onGo} />)
+    await userEvent.type(screen.getByLabelText('Room code'), '{enter}')
+    expect(onGo).toHaveBeenCalledExactlyOnceWith('PECAN-2655')
+  })
+})

@@ -63,12 +63,41 @@ const roundRoom = (now: number) => ({
 })
 
 describe('Room', () => {
-  it('shows Room not found with a link home', async () => {
+  it('not found: shows the code that was typed and a link home', async () => {
     setHook({ status: 'not-found' })
-    renderRoom()
-    expect(screen.getByText('Room not found')).toBeInTheDocument()
+    renderRoom('/r/peckan-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECKAN-2654')
+    expect(screen.getByLabelText(/room code/i)).toHaveValue('PECKAN-2654')
     await userEvent.click(screen.getByRole('link', { name: /home/i }))
     expect(screen.getByText('HOME PAGE')).toBeInTheDocument()
+  })
+
+  it('not found: correct the code in place and it retries straight away', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECAN-2655')
+    expect(hook.code).toBe('PECAN-2655')
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Backspace}4')
+    expect(hook.code).toBe('PECAN-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECAN-2654')
+    expect(screen.getByLabelText(/room code/i)).toHaveValue('PECAN-2654')
+  })
+
+  it('not found: a near miss offers the right word', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECAN-2655')
+    const input = screen.getByLabelText(/room code/i) as HTMLInputElement
+    input.focus()
+    input.setSelectionRange(5, 5) // PECAN|-2655
+    await userEvent.keyboard('{Backspace}{Backspace}KN') // PECKN
+    expect(hook.code).toBe('PECAN-2655')
+    await userEvent.click(screen.getByRole('button', { name: 'Did you mean PECAN?' }))
+    expect(hook.code).toBe('PECAN-2655')
+  })
+
+  it('a link with a spoken-style code still finds the room', () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/pecan%202654')
+    expect(hook.code).toBe('PECAN-2654')
   })
 
   it('shows loading', () => {

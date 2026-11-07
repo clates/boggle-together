@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import CodeField from '../components/CodeField'
 import HouseholdList from '../components/HouseholdList'
 import LeaveRoom from '../components/LeaveRoom'
 import { unlockAudio } from '../lib/audio'
+import { isComplete, normalizeCode } from '../lib/roomCode'
 import { useRoom } from '../lib/useRoom'
 import { supabase } from '../lib/supabase'
 import InGame from './InGame'
@@ -56,8 +58,11 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
 }
 
 export default function Room() {
-  // codes are stored uppercase; a link typed or lowercased by a chat app must still work
-  const code = (useParams().code ?? '').trim().toUpperCase()
+  // codes are stored uppercase; a link typed or lowercased by a chat app (or /r/pecan 2654) must still work
+  const param = (useParams().code ?? '').trim().toUpperCase()
+  const spoken = normalizeCode(param)
+  const code = isComplete(spoken) ? spoken : param
+  const location = useLocation()
   const room = useRoom(code)
   const { status, me, phase } = room
   const navigate = useNavigate()
@@ -70,7 +75,17 @@ export default function Room() {
   if (status === 'not-found')
     return (
       <main>
-        <h1>Room not found</h1>
+        <h1 className="not-found">
+          No room with the code <span className="nowrap">{code}</span>
+        </h1>
+        <p className="muted">Check it against what was said, fix it here, and you will go straight in.</p>
+        <CodeField
+          key={code}
+          label="Room code"
+          initial={code}
+          autoFocus={!!(location.state as { retry?: boolean } | null)?.retry}
+          onGo={(c) => navigate(`/r/${c}`, { replace: true, state: { retry: true } })}
+        />
         <Link to="/">Back to home</Link>
       </main>
     )
