@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant } from '../lib/useRoom'
 
 const hook = vi.hoisted(() => ({ value: {} as any, code: '' }))
@@ -13,6 +13,8 @@ vi.mock('../lib/useRoom', () => ({
 }))
 vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
+import { resetAudio } from '../lib/audio'
+import { FakeAudioContext } from '../lib/audio/fakeAudioContext'
 import Room from './Room'
 
 const p = (id: string, kind: Participant['kind'], ready = false): Participant => ({
@@ -39,7 +41,26 @@ function renderRoom(path = '/r/ABCD') {
   )
 }
 
-beforeEach(() => setHook({}))
+let ctx: FakeAudioContext
+let Ctor: ReturnType<typeof vi.fn>
+beforeEach(() => {
+  setHook({})
+  localStorage.clear()
+  ctx = new FakeAudioContext({ state: 'suspended' })
+  Ctor = vi.fn(function () {
+    return ctx
+  })
+  vi.stubGlobal('AudioContext', Ctor)
+  resetAudio()
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+  resetAudio()
+})
+
+const roundRoom = (now: number) => ({
+  code: 'ABCD', round: 1, start_at: new Date(now - 1_000).toISOString(), ends_at: new Date(now + 11_000).toISOString(), results_at: null,
+})
 
 describe('Room', () => {
   it('shows Room not found with a link home', async () => {
@@ -203,5 +224,46 @@ describe('Room', () => {
     setHook({ me: t, participants: [h, t], phase: 'results' })
     renderRoom()
     await waitFor(() => expect(screen.getByTestId('results')).toBeInTheDocument())
+  })
+
+  it('lobby Ready and Start anyway unlock audio (a user gesture)', async () => {
+    const a = p('1', 'household', true), b = p('2', 'household', true), c = p('3', 'household', false)
+    setHook({ me: a, participants: [a, b, c] })
+    renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: /ready\?/i }))
+    expect(Ctor).toHaveBeenCalledTimes(1)
+    expect(ctx.resumeCalls).toBe(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Start anyway' }))
+    expect(ctx.resumeCalls).toBe(1) // already running
+    expect(Ctor).toHaveBeenCalledTimes(1)
+  })
+
+  it('results Ready and Start anyway unlock audio', async () => {
+    const a = p('1', 'household', true), b = p('2', 'household', true), c = p('3', 'household', false)
+    setHook({ me: a, participants: [a, b, c], phase: 'results', room: { ...roundRoom(Date.now()), results_at: new Date().toISOString() } })
+    renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Start anyway' }))
+    expect(Ctor).toHaveBeenCalledTimes(1)
+    expect(ctx.resumeCalls).toBe(1)
+    expect(screen.queryByRole('button', { name: /enable sound/i })).toBeNull()
+  })
+
+  it('a typist device never creates an audio context, in any phase', async () => {
+    const h = p('1', 'household'), t = p('2', 'typist')
+    const now = Date.now()
+    for (const phase of ['lobby', 'countdown', 'playing', 'locked', 'results']) {
+      setHook({ me: t, participants: [h, t], phase, room: roundRoom(now) })
+      const r = renderRoom()
+      expect(screen.queryByRole('button', { name: /enable sound/i })).toBeNull()
+      r.unmount()
+    }
+    expect(Ctor).not.toHaveBeenCalled()
+  })
+
+  it('a household in a round with locked audio sees the enable prompt', () => {
+    const h = p('1', 'household')
+    setHook({ me: h, participants: [h], phase: 'playing', room: roundRoom(Date.now()) })
+    renderRoom()
+    expect(screen.getByRole('button', { name: /tap to enable sound/i })).toBeInTheDocument()
   })
 })

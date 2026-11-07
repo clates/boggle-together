@@ -32,23 +32,28 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 /* In-game (shared screen). The background is the timer: a fill anchored at the bottom drains away. */
 /* --board-size fills the shorter side, but on near-square screens it leaves --tab-room (both sides,
    along the longer axis) so the dog-ear tab never covers the top-right tile. */
-.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --board-size: min(calc(min(100vw, 100dvh) - 24px), calc(max(100vw, 100dvh) - var(--tab-room))); }
+/* --top / --bottom reserve strips for the sound prompt and the locked bar; the board fits between. */
+.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
 .fill { position: absolute; left: 0; right: 0; bottom: 0; transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
-.stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.stage { position: absolute; inset: var(--top) 0 var(--bottom) 0; display: flex; align-items: center; justify-content: center; }
 .ingame .board-wrap { width: var(--board-size); height: var(--board-size); margin: 0; flex: none; }
 .ingame .tile { border-width: max(3px, 0.6cqmin); }
 .board-blank { width: var(--board-size); height: var(--board-size); }
-.ingame-locked { --board-size: min(calc(min(100vw, 100dvh - 150px) - 24px), calc(max(100vw, 100dvh - 150px) - var(--tab-room))); }
-.ingame-locked .stage { bottom: 150px; }
+.ingame-locked { --bottom: 150px; }
 .locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; }
 .pens-down { font-size: 2.6rem; font-weight: 900; min-height: 104px; padding: 12px 56px; border-radius: 18px; border: 0; background: #b3261e; color: #fff; box-shadow: 0 6px 0 #7a1712; }
 .pens-down:active { transform: translateY(3px); box-shadow: 0 3px 0 #7a1712; }
 .waiting { font-size: 1.8rem; font-weight: 800; margin: 0; }
 .show-results { font-size: 1.3rem; font-weight: 700; min-height: 64px; }
 .locked-bar .error { flex-basis: 100%; text-align: center; }
-.countdown { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; }
+.countdown { position: absolute; inset: var(--top) 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; }
 .countdown-number { font-size: 55vmin; font-weight: 900; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
 .countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: #444; }
+/* Shown when the browser is holding sound back (e.g. after a refresh): a top strip, clear of the board and the dog-ear. */
+.ingame-sound-prompt { --top: 84px; }
+.sound-prompt { position: absolute; top: 0; left: 0; right: 64px; height: 84px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 12px; box-sizing: border-box; }
+.sound-enable { font-size: 1.2rem; font-weight: 800; min-height: 48px; padding: 6px 20px; border-radius: 12px; border: 2px solid #222; background: #ffe680; color: #222; }
+.sound-note { margin: 0; font-size: 0.85rem; color: #555; text-align: center; }
 .dogear { position: absolute; top: 0; right: 0; z-index: 2; }
 /* A 56 px tap target (invisible) around a 44 px folded corner. */
 .dogear-tab { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
