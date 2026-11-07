@@ -139,10 +139,13 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 .typist-form { flex: none; }
 input.typist-input { font-size: 24px; width: 100%; box-sizing: border-box; min-height: 56px; }
 .typist-message { flex: none; font-size: 16px; }
-.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #fff; border: 2px solid #222; border-radius: 12px; overflow: hidden; }
+/* The list card is translucent so the timer shows through it; its text is #222, which stays above
+   7:1 against the card blended over every drain color (9.55:1 over the end-of-round red). */
+.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: rgb(255 255 255 / 0.7); border: 2px solid #222; border-radius: 12px; overflow: hidden; }
 .typist-words-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 14px; border-bottom: 1px solid #ddd; }
-.typist-count { margin: 0; font-size: 16px; color: #666; }
-button.typist-rotate { margin: 4px 0; }
+.typist-count { margin: 0; font-size: 16px; color: #222; }
+.typist-words .muted { color: #222; }
+button.typist-rotate { margin: 4px 0; color: #222; border-color: #555; }
 .typist-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 6px 14px 10px; font-size: 20px; line-height: 1.5; }
 /* Landscape phone: board on the left, input and list on the right. */
 @container typist (aspect-ratio >= 3/2) {
