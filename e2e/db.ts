@@ -1,16 +1,12 @@
 import { execFileSync } from 'node:child_process'
+import { assertLocalDbUrl } from './guards'
 
 // `postgres` connection to the LOCAL Supabase database only. These helpers change database
 // settings and restart containers, so they refuse to touch anything but the local stack.
 export const DB_URL = process.env.E2E_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
 export const API_URL = 'http://127.0.0.1:54321'
 
-function assertLocal(url: string) {
-  const u = new URL(url)
-  if (u.hostname !== '127.0.0.1' || u.port !== '54322') {
-    throw new Error(`Refusing to run e2e DB setup against ${u.hostname}:${u.port}; only 127.0.0.1:54322 (local Supabase) is allowed`)
-  }
-}
+const assertLocal = assertLocalDbUrl
 
 export function psql(sql: string): string {
   assertLocal(DB_URL)
