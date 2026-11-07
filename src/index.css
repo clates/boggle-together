@@ -29,13 +29,15 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 .tile-long { font-size: 10cqmin; }
 
 /* In-game (shared screen). The background is the timer: a fill anchored at the bottom drains away. */
-.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --board-size: calc(min(100vw, 100dvh) - 24px); }
+/* --board-size fills the shorter side, but on near-square screens it leaves --tab-room (both sides,
+   along the longer axis) so the dog-ear tab never covers the top-right tile. */
+.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --board-size: min(calc(min(100vw, 100dvh) - 24px), calc(max(100vw, 100dvh) - var(--tab-room))); }
 .fill { position: absolute; left: 0; right: 0; bottom: 0; transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
 .stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .ingame .board-wrap { width: var(--board-size); height: var(--board-size); margin: 0; flex: none; }
 .ingame .tile { border-width: max(3px, 0.6cqmin); }
 .board-blank { width: var(--board-size); height: var(--board-size); }
-.ingame-locked { --board-size: calc(min(100vw, 100dvh - 150px) - 24px); }
+.ingame-locked { --board-size: min(calc(min(100vw, 100dvh - 150px) - 24px), calc(max(100vw, 100dvh - 150px) - var(--tab-room))); }
 .ingame-locked .stage { bottom: 150px; }
 .locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; }
 .pens-down { font-size: 2.6rem; font-weight: 900; min-height: 104px; padding: 12px 56px; border-radius: 18px; border: 0; background: #b3261e; color: #fff; box-shadow: 0 6px 0 #7a1712; }
@@ -47,8 +49,10 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 .countdown-number { font-size: 55vmin; font-weight: 900; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
 .countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: #444; }
 .dogear { position: absolute; top: 0; right: 0; z-index: 2; }
-.dogear-tab { display: block; width: 64px; height: 64px; min-height: 0; padding: 0; border: 0; border-radius: 0 0 0 12px; background: linear-gradient(to bottom left, transparent 50%, #e2e2e2 50%, #fff 100%); filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.3)); }
-.dogear-panel { position: absolute; top: 72px; right: 12px; width: max-content; background: #fff; border: 2px solid #222; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
+/* A 56 px tap target (invisible) around a 44 px folded corner. */
+.dogear-tab { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.dogear-tab::before { content: ''; position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: 0 0 0 10px; background: linear-gradient(to bottom left, transparent 50%, #e2e2e2 50%, #fff 100%); filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.3)); }
+.dogear-panel { position: absolute; top: 60px; right: 12px; width: max-content; background: #fff; border: 2px solid #222; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
 .dogear-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
 
 /* Results: left pane (board, room, households, ready), right pane (one scroll container of typist columns). */
