@@ -118,7 +118,7 @@ describe('Room', () => {
     setHook({ status: 'needs-join', join: vi.fn().mockRejectedValue(new Error('Room is full')) })
     renderRoom()
     expect(screen.getByLabelText('Shared screen')).toBeChecked()
-    await userEvent.click(screen.getByLabelText('Type my words'))
+    await userEvent.click(screen.getByLabelText('Type on my phone'))
     await userEvent.type(screen.getByLabelText(/name/i), 'Tina')
     await userEvent.click(screen.getByRole('button', { name: 'Join' }))
     expect(hook.value.join).toHaveBeenCalledWith('typist', 'Tina')
