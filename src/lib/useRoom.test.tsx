@@ -150,6 +150,17 @@ describe('useRoom', () => {
     expect(result.current.phase).toBe('playing')
   })
 
+  it('treats a lowercase, padded code like the canonical one', async () => {
+    const f = makeFake()
+    f.db.rooms.set('OAK-0101', room({ code: 'OAK-0101' }))
+    f.db.members.add('OAK-0101')
+    f.db.participants.push({ room_code: 'OAK-0101', id: 'u1', kind: 'household', name: 'A', ready: false, pens_down: false })
+    const { result } = renderHook(() => useRoom(' oak-0101 ', f.client))
+    await flush()
+    expect(result.current.status).toBe('ready')
+    expect(result.current.me?.id).toBe('u1')
+  })
+
   it('reports not-found for an unknown code', async () => {
     const f = makeFake()
     const { result } = renderHook(() => useRoom('NOPE-00', f.client))

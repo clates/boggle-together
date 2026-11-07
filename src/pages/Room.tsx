@@ -53,7 +53,8 @@ function Lobby({ code, room }: { code: string; room: Room }) {
 }
 
 export default function Room() {
-  const { code = '' } = useParams()
+  // codes are stored uppercase; a link typed or lowercased by a chat app must still work
+  const code = (useParams().code ?? '').trim().toUpperCase()
   const room = useRoom(code)
   const { status, me, phase } = room
 

@@ -4,8 +4,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant } from '../lib/useRoom'
 
-const hook = vi.hoisted(() => ({ value: {} as any }))
-vi.mock('../lib/useRoom', () => ({ useRoom: () => hook.value }))
+const hook = vi.hoisted(() => ({ value: {} as any, code: '' }))
+vi.mock('../lib/useRoom', () => ({
+  useRoom: (code: string) => {
+    hook.code = code
+    return hook.value
+  },
+}))
 vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
 import Room from './Room'
@@ -23,9 +28,9 @@ function setHook(over: Record<string, unknown>) {
   }
 }
 
-function renderRoom() {
+function renderRoom(path = '/r/ABCD') {
   return render(
-    <MemoryRouter initialEntries={['/r/ABCD']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/" element={<p>HOME PAGE</p>} />
         <Route path="/r/:code" element={<Room />} />
@@ -119,6 +124,15 @@ describe('Room', () => {
     setHook({ me: all[0], participants: all })
     renderRoom()
     expect(screen.queryByRole('button', { name: 'Start anyway' })).not.toBeInTheDocument()
+  })
+
+  it('a lowercase room link joins the same room as the uppercase one', () => {
+    const me = p('1', 'household')
+    setHook({ me, participants: [me] })
+    renderRoom('/r/abcd')
+    expect(hook.code).toBe('ABCD')
+    expect(screen.getByText('ABCD')).toBeInTheDocument()
+    expect(screen.getByText(`${location.origin}/r/ABCD`)).toBeInTheDocument()
   })
 
   it('typist in lobby sees waiting screen', () => {

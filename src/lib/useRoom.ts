@@ -56,7 +56,8 @@ type Loaded =
   | { kind: 'absent'; uid: string; exists: boolean }
   | { kind: 'present'; uid: string; room: RoomRow; participants: Participant[] }
 
-export function useRoom(code: string, client: Client = supabase) {
+export function useRoom(rawCode: string, client: Client = supabase) {
+  const code = rawCode.trim().toUpperCase()
   const [status, setStatus] = useState<RoomStatus>('loading')
   const [room, setRoom] = useState<RoomRow | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
