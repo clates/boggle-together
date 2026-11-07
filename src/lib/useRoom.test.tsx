@@ -48,6 +48,10 @@ function makeFake(shared?: Db) {
         return { data: db.board, error: null }
       case 'set_ready':
         return { data: null, error: { message: 'Round already in progress' } }
+      case 'remove_participant':
+        db.participants = db.participants.filter((p) => !(p.room_code === code && p.id === args.p_participant))
+        if (args.p_participant === db.userId) db.members.delete(code)
+        return { data: null, error: null }
       case 'submit_word':
         return { data: null, error: { message: 'Too late' } }
       default:
@@ -229,6 +233,27 @@ describe('useRoom', () => {
     await flush()
     await expect(result.current.actions.setReady(true)).resolves.toBeUndefined()
     await expect(result.current.actions.submitWord('cat')).rejects.toThrow('Too late')
+  })
+
+  it('removeParticipant calls the RPC and a removed user drops to needs-join', async () => {
+    const f = makeFake()
+    f.db.rooms.set('OAK-01', room())
+    f.db.members.add('OAK-01')
+    f.db.participants.push({ room_code: 'OAK-01', id: 'u1', kind: 'household', name: 'A', ready: false, pens_down: false })
+    f.db.participants.push({ room_code: 'OAK-01', id: 'u2', kind: 'household', name: 'B', ready: false, pens_down: false })
+    const { result } = renderHook(() => useRoom('OAK-01', f.client))
+    await flush()
+    await act(async () => {
+      await result.current.actions.removeParticipant('u2')
+    })
+    expect(f.rpc).toHaveBeenCalledWith('remove_participant', { p_code: 'OAK-01', p_participant: 'u2' })
+    expect(result.current.participants.map((p) => p.id)).toEqual(['u1'])
+    // someone else removes me: the next load finds no participant row
+    f.db.participants = f.db.participants.filter((p) => p.id !== 'u1')
+    f.db.members.delete('OAK-01')
+    await advance(5000)
+    expect(result.current.status).toBe('needs-join')
+    expect(result.current.me).toBeNull()
   })
 
   function member(f: ReturnType<typeof makeFake>, r: Row = room()) {

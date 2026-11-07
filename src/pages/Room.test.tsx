@@ -23,7 +23,7 @@ function setHook(over: Record<string, unknown>) {
   hook.value = {
     status: 'ready', room: { code: 'ABCD', round: 0 }, participants: [], me: null, phase: 'lobby',
     serverNowMs: () => Date.now(), board: null, join: vi.fn().mockResolvedValue(undefined),
-    actions: { setReady: vi.fn().mockResolvedValue(undefined), startAnyway: vi.fn().mockResolvedValue(undefined) },
+    actions: { setReady: vi.fn().mockResolvedValue(undefined), startAnyway: vi.fn().mockResolvedValue(undefined), removeParticipant: vi.fn().mockResolvedValue(undefined) },
     ...over,
   }
 }
@@ -133,6 +133,54 @@ describe('Room', () => {
     expect(hook.code).toBe('ABCD')
     expect(screen.getByText('ABCD')).toBeInTheDocument()
     expect(screen.getByText(`${location.origin}/r/ABCD`)).toBeInTheDocument()
+  })
+
+  it('lobby: a household can remove another household with two taps', async () => {
+    const me = p('1', 'household'), other = p('2', 'household')
+    setHook({ me, participants: [me, other] })
+    renderRoom()
+    expect(screen.queryByRole('button', { name: 'Remove N1' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove N2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('2')
+  })
+
+  it('lobby: Leave room removes me and goes home', async () => {
+    const me = p('1', 'household')
+    setHook({ me, participants: [me] })
+    renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Leave room' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('1')
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument()
+  })
+
+  it('typist waiting screen has Leave room', async () => {
+    const me = p('9', 'typist')
+    setHook({ me, participants: [p('1', 'household'), me] })
+    renderRoom()
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Leave room' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('9')
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument()
+  })
+
+  it('results: households can remove, everyone can leave', async () => {
+    const h = p('1', 'household'), h2 = p('2', 'household'), t = p('3', 'typist')
+    setHook({ me: h, participants: [h, h2, t], phase: 'results' })
+    const r = renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove N2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('2')
+    r.unmount()
+    setHook({ me: t, participants: [h, h2, t], phase: 'results' })
+    renderRoom()
+    expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Leave room' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('3')
+    expect(await screen.findByText('HOME PAGE')).toBeInTheDocument()
   })
 
   it('typist in lobby sees waiting screen', () => {

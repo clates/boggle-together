@@ -35,7 +35,7 @@ function makeRoom(over: Partial<ResultsRoom> = {}): ResultsRoom {
     participants: [...households, ...typists(4)],
     me: households[1],
     board: LETTERS,
-    actions: { setReady: vi.fn().mockResolvedValue(undefined), startAnyway: vi.fn().mockResolvedValue(undefined) },
+    actions: { setReady: vi.fn().mockResolvedValue(undefined), startAnyway: vi.fn().mockResolvedValue(undefined), removeParticipant: vi.fn().mockResolvedValue(undefined) },
     ...over,
   }
 }
@@ -134,7 +134,7 @@ describe('Results', () => {
 
   it('shows a message when setReady fails', async () => {
     const setReady = vi.fn().mockRejectedValue(new Error('Network down'))
-    setup({ actions: { setReady, startAnyway: vi.fn() } })
+    setup({ actions: { setReady, startAnyway: vi.fn(), removeParticipant: vi.fn() } })
     await userEvent.click(screen.getByRole('button', { name: /Ready\?/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Network down')
   })

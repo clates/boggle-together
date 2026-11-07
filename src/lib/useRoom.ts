@@ -270,6 +270,11 @@ export function useRoom(rawCode: string, client: Client = supabase) {
       submitWord: (w: string) => call('submit_word', { p_word: w }),
       pensDown: () => call('pens_down', {}),
       showResults: () => call('show_results', {}),
+      /** Remove a participant (any household may; a typist only itself), then reload. */
+      removeParticipant: async (id: string) => {
+        await call('remove_participant', { p_participant: id })
+        await reloadRef.current()
+      },
     }),
     [call],
   )

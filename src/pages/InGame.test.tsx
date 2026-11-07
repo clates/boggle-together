@@ -30,6 +30,7 @@ function makeRoom(over: Partial<InGameRoom> & { now?: () => number; roomOver?: P
     board: LETTERS,
     actions: {
       pensDown: vi.fn().mockResolvedValue(undefined),
+      removeParticipant: vi.fn().mockResolvedValue(undefined),
       showResults: vi.fn().mockResolvedValue(undefined),
       setReady: vi.fn().mockResolvedValue(undefined),
       startAnyway: vi.fn().mockResolvedValue(undefined),

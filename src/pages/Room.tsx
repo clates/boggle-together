@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import HouseholdList from '../components/HouseholdList'
+import LeaveRoom from '../components/LeaveRoom'
 import { useRoom } from '../lib/useRoom'
 import { supabase } from '../lib/supabase'
 import InGame from './InGame'
@@ -10,7 +11,7 @@ import Typist from './Typist'
 
 type Room = ReturnType<typeof useRoom>
 
-function Lobby({ code, room }: { code: string; room: Room }) {
+function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () => Promise<void> }) {
   const { participants, me, actions } = room
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -38,7 +39,7 @@ function Lobby({ code, room }: { code: string; room: Room }) {
         <span className="link">{link}</span>{' '}
         <button type="button" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
       </p>
-      <HouseholdList participants={participants} />
+      <HouseholdList participants={participants} meId={me?.id} onRemove={(id) => void run(() => actions.removeParticipant(id))} />
       <button type="button" className="primary" onClick={() => run(() => actions.setReady(!me?.ready))}>
         Ready? {me?.ready ? '✅' : '⏳'}
       </button>
@@ -48,6 +49,7 @@ function Lobby({ code, room }: { code: string; room: Room }) {
         </button>
       )}
       {error && <p role="alert" className="error">{error}</p>}
+      <LeaveRoom onLeave={onLeave} />
     </main>
   )
 }
@@ -57,6 +59,11 @@ export default function Room() {
   const code = (useParams().code ?? '').trim().toUpperCase()
   const room = useRoom(code)
   const { status, me, phase } = room
+  const navigate = useNavigate()
+  const leave = async () => {
+    if (me) await room.actions.removeParticipant(me.id)
+    navigate('/')
+  }
 
   if (status === 'loading') return <main><p className="muted">Loading...</p></main>
   if (status === 'not-found')
@@ -79,15 +86,16 @@ export default function Room() {
         <main>
           <h1>Waiting for the game to start</h1>
           <p className="code">{code}</p>
+          <LeaveRoom onLeave={leave} />
         </main>
       ) : (
-        <Lobby code={code} room={room} />
+        <Lobby code={code} room={room} onLeave={leave} />
       )
     case 'countdown':
     case 'playing':
     case 'locked':
       return isTypist ? <Typist room={room} loadOwnWords={loadOwnWords} /> : <InGame code={code} room={room} />
     default:
-      return <Results code={code} room={room} />
+      return <Results code={code} room={room} onLeave={leave} />
   }
 }

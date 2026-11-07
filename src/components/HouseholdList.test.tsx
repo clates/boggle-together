@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { vi } from 'vitest'
 import { describe, expect, it } from 'vitest'
 import HouseholdList from './HouseholdList'
 import type { Participant } from '../lib/useRoom'
@@ -18,5 +20,30 @@ describe('HouseholdList', () => {
     expect(screen.getByText('Joneses').closest('li')).toHaveTextContent('⏳')
     expect(screen.queryByText('Tina')).not.toBeInTheDocument()
     expect(screen.getByText('1 typing their words')).toBeInTheDocument()
+  })
+
+  it('has no Remove buttons unless asked', () => {
+    render(<HouseholdList participants={[p('1', 'Smiths', 'household', true), p('2', 'Joneses', 'household', false)]} />)
+    expect(screen.queryByRole('button', { name: /remove/i })).toBeNull()
+  })
+
+  it('two-tap Remove for other households, none for me', async () => {
+    const onRemove = vi.fn()
+    render(
+      <HouseholdList
+        participants={[p('1', 'Smiths', 'household', true), p('2', 'Joneses', 'household', false), p('3', 'Tina', 'typist', false)]}
+        meId="1"
+        onRemove={onRemove}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Remove Smiths' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Joneses' }))
+    expect(screen.getByText('Remove Joneses?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'No' }))
+    expect(onRemove).not.toHaveBeenCalled()
+    expect(screen.queryByText('Remove Joneses?')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Joneses' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    expect(onRemove).toHaveBeenCalledWith('2')
   })
 })

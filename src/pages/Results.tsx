@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import Board from '../components/Board'
 import HouseholdList from '../components/HouseholdList'
+import LeaveRoom from '../components/LeaveRoom'
 import type { Client } from '../lib/supabase'
 import type { Participant, useRoom } from '../lib/useRoom'
 import { useRoundWords, type RoundWordsStatus } from '../lib/useRoundWords'
@@ -8,7 +9,7 @@ import { markShared } from '../lib/words'
 
 // The slice of the room hook this screen needs (the hook's return satisfies it).
 export type ResultsRoom = Pick<ReturnType<typeof useRoom>, 'room' | 'participants' | 'me' | 'board'> & {
-  actions: Pick<ReturnType<typeof useRoom>['actions'], 'setReady' | 'startAnyway'>
+  actions: Pick<ReturnType<typeof useRoom>['actions'], 'setReady' | 'startAnyway' | 'removeParticipant'>
 }
 
 export type ResultsColumn = { id: string; name: string; words: { word: string; shared: boolean }[] }
@@ -30,6 +31,10 @@ export type ResultsViewProps = {
   onRetry: () => void
   /** Ready / Start anyway; null for typists */
   controls: ResultsControls | null
+  meId?: string
+  /** households only: remove another household */
+  onRemove?: (id: string) => void
+  onLeave?: () => Promise<void>
 }
 
 const LARGE_UP_TO = 4
@@ -56,7 +61,7 @@ function WordColumns({ columns }: { columns: ResultsColumn[] }) {
   )
 }
 
-export function ResultsView({ code, board, participants, columns, wordsStatus, onRetry, controls }: ResultsViewProps) {
+export function ResultsView({ code, board, participants, columns, wordsStatus, onRetry, controls, meId, onRemove, onLeave }: ResultsViewProps) {
   let words
   if (wordsStatus === 'error')
     words = (
@@ -90,7 +95,7 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
             <p className="results-room-label">Room</p>
             <p className="results-room-code">{code}</p>
           </div>
-          <HouseholdList participants={participants} />
+          <HouseholdList participants={participants} meId={meId} onRemove={onRemove} />
           {controls && (
             <div className="results-controls">
               <button type="button" className="primary" onClick={controls.onReady}>
@@ -108,6 +113,7 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
               )}
             </div>
           )}
+          {onLeave && <LeaveRoom onLeave={onLeave} />}
         </div>
       </aside>
       {words}
@@ -118,7 +124,17 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong')
 const joined = (p: Participant) => (typeof p.joined_at === 'string' ? p.joined_at : '')
 
-export default function Results({ code, room, client }: { code: string; room: ResultsRoom; client?: Client }) {
+export default function Results({
+  code,
+  room,
+  client,
+  onLeave,
+}: {
+  code: string
+  room: ResultsRoom
+  client?: Client
+  onLeave?: () => Promise<void>
+}) {
   const { participants, me, board, actions } = room
   const round = room.room?.round ?? null
   const words = useRoundWords(code, round, round !== null, client)
@@ -158,6 +174,9 @@ export default function Results({ code, room, client }: { code: string; room: Re
       wordsStatus={words.status}
       onRetry={words.retry}
       controls={controls}
+      meId={me?.id}
+      onRemove={me?.kind === 'household' ? (id) => void run(() => actions.removeParticipant(id)) : undefined}
+      onLeave={onLeave}
     />
   )
 }
