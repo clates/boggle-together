@@ -34,8 +34,34 @@ describe('normalizeCode', () => {
     ['pé!can', 'PCAN'],
     ['2654', ''],
     ['--', ''],
+    // URL-encoded and full-width text is decoded first
+    ['pecan%202654', 'PECAN-2654'],
+    ['pecan%2D2654', 'PECAN-2654'],
+    ['https://boggle.example/r/pecan%202654?m=type', 'PECAN-2654'],
+    ['https%3A%2F%2Fboggle.example%2Fr%2Fpecan%2D2654%3Fm%3Dtype', 'PECAN-2654'],
+    ['ＰＥＣＡＮ　２６５４', 'PECAN-2654'],
+    ['pecan２６５４', 'PECAN-2654'],
   ])('%j -> %j', (raw, out) => {
     expect(normalizeCode(raw)).toBe(out)
+  })
+})
+
+describe('normalizeCode on hostile input', () => {
+  it.each(['pecan%2', 'pecan%zz2654', '%E0%A4%A', '%', 'pecan%%2654'])('malformed escapes in %j do not throw', (raw) => {
+    expect(() => normalizeCode(raw)).not.toThrow()
+  })
+
+  it('malformed escapes still read the code around them', () => {
+    expect(normalizeCode('pecan%E0%A42654')).toBe('PECAN-2654') // invalid UTF-8: decodeURIComponent throws
+  })
+
+  it('a 100k-character input normalizes in well under 100 ms', () => {
+    for (const raw of ['a'.repeat(100_000), 'a'.repeat(100_000) + ' 2654', 'a1'.repeat(50_000), 'ab '.repeat(33_000) + '%20'.repeat(1000)]) {
+      const t = performance.now()
+      normalizeCode(raw)
+      editCode('PECAN', raw, raw.length)
+      expect(performance.now() - t).toBeLessThan(100)
+    }
   })
 })
 

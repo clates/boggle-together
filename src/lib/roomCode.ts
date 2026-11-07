@@ -57,19 +57,71 @@ function simple(upper: string): Parsed {
   return { letters, digits, separator, whole: false }
 }
 
+/**
+ * The first "letters, separators, 4+ digits" in `s` from `from`, in one linear pass (a regex with
+ * a leading [A-Z]+ is quadratic on long letter runs, and the route param is parsed every render).
+ */
+function findCode(s: string, from: number, sepOk: (c: string) => boolean): { start: number; word: string; digits: string } | null {
+  let ws = -1 // start of the candidate word, -1 if none
+  let we = -1
+  for (let i = from; i < s.length; i++) {
+    const c = s[i]
+    if (isLetter(c)) {
+      if (we !== i) ws = i // a new run unless it continues the candidate
+      we = i + 1
+    } else if (isDigit(c)) {
+      let j = i
+      while (j < s.length && isDigit(s[j])) j++
+      if (ws >= 0 && j - i >= DIGITS) return { start: ws, word: s.slice(ws, we), digits: s.slice(i, i + DIGITS) }
+      ws = we = -1
+      i = j - 1
+    } else if (!sepOk(c)) {
+      ws = we = -1
+    }
+  }
+  return null
+}
+
+const anySep = () => true
+const linkSep = (c: string) => c !== '/' && c !== '?' && c !== '#'
+
 /** A whole code inside a link or a message, if there is one. */
 function whole(upper: string, plain: Parsed): Parsed | null {
-  const link = upper.match(/\/R\/([A-Z]+)[^A-Z0-9/?#]*(\d{4})/)
-  if (link) return { letters: link[1].slice(0, MAX_WORD_LENGTH), digits: link[2], separator: false, whole: true }
-  const m = upper.match(/([A-Z]+)[^A-Z0-9]*(\d{4})/)
+  const at = upper.indexOf('/R/')
+  const link = at >= 0 ? findCode(upper, at + 3, linkSep) : null
+  if (link && link.start === at + 3) return { letters: link.word.slice(0, MAX_WORD_LENGTH), digits: link.digits, separator: false, whole: true }
+  const m = findCode(upper, 0, anySep)
   if (!m) return null
   // "pe can 2654" is PECAN; "Code: lime-6014" is LIME. Prefer whichever reading is a real word.
-  const word = isKnownWord(plain.letters) || (!isKnownWord(m[1]) && plain.letters.length < MAX_WORD_LENGTH) ? plain.letters : m[1]
-  return { letters: word.slice(0, MAX_WORD_LENGTH), digits: m[2], separator: false, whole: true }
+  const word = isKnownWord(plain.letters) || (!isKnownWord(m.word) && plain.letters.length < MAX_WORD_LENGTH) ? plain.letters : m.word
+  return { letters: word.slice(0, MAX_WORD_LENGTH), digits: m.digits, separator: false, whole: true }
+}
+
+/** Longest input looked at; a pasted message or link is far shorter, and this bounds the work. */
+const MAX_INPUT = 1000
+
+/**
+ * Uppercase plain text: URL escapes decoded (a link may carry pecan%202654), and full-width or
+ * other compatibility forms folded by NFKC (ＰＥＣＡＮ２６５４). Never throws.
+ */
+function prepare(raw: string): string {
+  let s = raw.slice(0, MAX_INPUT)
+  if (s.includes('%')) {
+    try {
+      s = decodeURIComponent(s)
+    } catch {
+      // malformed: decode the ASCII escapes one by one, anything else becomes a separator
+      s = s.replace(/%([0-9A-Fa-f]{2})/g, (_, h: string) => {
+        const code = parseInt(h, 16)
+        return code < 0x80 ? String.fromCharCode(code) : ' '
+      })
+    }
+  }
+  return s.normalize('NFKC').toUpperCase()
 }
 
 function parse(raw: string): Parsed {
-  const upper = raw.toUpperCase()
+  const upper = prepare(raw)
   const plain = simple(upper)
   return whole(upper, plain) ?? plain
 }
@@ -101,7 +153,7 @@ export function editCode(prev: string, raw: string, caret: number, inputType = '
   if (p.whole && raw.length - prev.length > 1) return { value, caret: value.length }
 
   // Map the caret: count the kept letters and digits before it in the raw value.
-  const before = simple(raw.slice(0, caret).toUpperCase())
+  const before = simple(prepare(raw.slice(0, caret)))
   const letters = Math.min(before.letters.length, p.letters.length)
   const digits = Math.min(before.digits.length, p.digits.length)
   const hyphen = value.includes('-')
