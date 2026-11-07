@@ -119,6 +119,11 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
   .results-controls button.primary { font-size: 18px; }
 }
 
+/* Lobby: QR code for a phone at the same table (opens the join form on "Type on my phone"). */
+.join-qr { margin: 0; display: flex; align-items: center; gap: 16px; }
+.join-qr svg { width: 200px; height: 200px; flex: none; display: block; }
+.join-qr figcaption { font-size: 16px; line-height: 1.4; color: #555; max-width: 16em; }
+
 /* Typist phone. The element tracks the visible viewport (--vv-h/--vv-top from useVisualViewport;
    100dvh without it), so an open keyboard shrinks the layout instead of covering it. It is a size
    container: the board is the largest square that leaves --typist-reserve below it for the input

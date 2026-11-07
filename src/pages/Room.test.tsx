@@ -15,6 +15,8 @@ vi.mock('../lib/useRoom', async () => {
     },
   }
 })
+// The QR code itself is tested in JoinQr.test; here only where it shows and what it encodes.
+vi.mock('../components/JoinQr', () => ({ default: ({ url }: { url: string }) => <p data-testid="join-qr-stub">{url}</p> }))
 vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
 import { resetAudio } from '../lib/audio'
@@ -249,6 +251,33 @@ describe('Room', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Yes' }))
     expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('3')
     expect(await screen.findByText('HOME PAGE')).toBeInTheDocument()
+  })
+
+  it('household lobby shows a QR code that opens the join form as a typist', () => {
+    const me = p('1', 'household')
+    setHook({ me, participants: [me], room: { code: 'PECAN-2654', round: 0, start_at: null, ends_at: null, results_at: null } })
+    renderRoom('/r/PECAN-2654')
+    expect(screen.getByTestId('join-qr-stub').textContent).toBe(`${location.origin}/r/PECAN-2654?m=type`)
+  })
+
+  it('no QR code for typists, in a round, or on the results', async () => {
+    const h = p('1', 'household'), t = p('2', 'typist')
+    const now = Date.now()
+    setHook({ me: t, participants: [h, t] })
+    const r1 = renderRoom()
+    expect(screen.getByText('Waiting for the game to start')).toBeInTheDocument()
+    expect(screen.queryByTestId('join-qr-stub')).toBeNull()
+    r1.unmount()
+    for (const phase of ['countdown', 'playing', 'locked', 'results']) {
+      for (const me of [h, t]) {
+        const room = phase === 'results' ? { ...roundRoom(now), results_at: new Date(now).toISOString() } : roundRoom(now)
+        setHook({ me, participants: [h, t], phase, room })
+        const r = renderRoom()
+        if (phase === 'results') await waitFor(() => expect(screen.getByTestId('results')).toBeInTheDocument())
+        expect(screen.queryByTestId('join-qr-stub')).toBeNull()
+        r.unmount()
+      }
+    }
   })
 
   it('typist in lobby sees waiting screen', () => {
