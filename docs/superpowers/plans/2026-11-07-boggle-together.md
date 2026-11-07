@@ -15,7 +15,7 @@
 - Board: 4x4 from the standard 16 Boggle dice; the "Qu" face is one tile reading "Qu".
 - Round: 3 minutes (180 s). Countdown before the board appears: 5 s. Grace for late typed words: 2 s. "Show results" allowed 30 s after time expires. These are the defaults of `start_round`; nothing is user-configurable.
 - Words: at least 3 letters; uppercased; de-duplicated per player; letters A-Z only; at most 20 letters; at most 300 words per player.
-- Limits: at most 4 households and 24 participants per room. Rooms expire 6 hours after last activity (my call). Room creation rate-limited per user (10 per hour).
+- Limits: no cap on households (Chris: "that was just an example gamenight"); at most 24 participants per room as an abuse guard. Rooms expire 6 hours after last activity (my call). Room creation rate-limited per user (10 per hour).
 - No accounts, no tracking, no stored personal data. Supabase anonymous auth is the only identity.
 - In-game screen: white background, letters fill nearly the whole screen, background color fill is the timer (green, then yellow, then red, draining downward), **no numeric clock anywhere**, tiles white with dark outlines, "Pens down!" at the end, dog-ear corner panel holding the 90-degree rotate button (local to that device) and room code.
 - Post-round screen: landscape tablet is the primary target. Left: board, room code, household ready list, Ready? button. Right: one column per typist, alphabetical, words found by 2+ typists grey and struck through in place; the whole word area scrolls both ways as one page with names pinned at the top. 8 typists must stay readable (15 px words at 8, 20 px at 4).
@@ -85,7 +85,7 @@ Every `*.test.ts(x)` sits next to its source file.
   - `create_room()` returns a code matching `^[A-Z]+-[0-9]{2}$` and creates a room row.
   - `join_room(lower('  '||code||' '),'household','Lates')` works (code is trimmed and uppercased) and adds a participant.
   - `join_room('NOPE-00', ...)` raises an exception whose message is `Room not found`.
-  - A 5th household and a 25th participant are each refused with `Room is full`.
+  - A 5th and 6th household can join; a 25th participant is refused with `Room is full`.
   - Names shorter than 1 or longer than 24 characters are refused.
   - A user who is not a member sees zero rows from `rooms` and `participants`.
   - The 11th `create_room()` by one user within an hour raises `Too many rooms`.

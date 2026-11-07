@@ -12,7 +12,7 @@ The app is an open resource. Anyone can start a room and play, and the code is p
 
 ## The game night
 
-- Up to 4 households per room, each with up to 4 people (roughly 16 players).
+- A typical game night has around 4 households of up to 4 people each (roughly 16 players), but there is no limit on the number of households. Only an overall cap per room protects the service from abuse.
 - Each household has one shared screen, usually a tablet in **landscape**, sitting in the middle of the table. Some households may use a laptop.
 - Most players write on paper. Some individuals may type their words on their own phone or tablet.
 - Households are on a voice or video call the whole time.
@@ -127,7 +127,7 @@ My calls (builder may change with reason):
 
 A reviewer read this document and asked what a builder couldn't guess. These are my answers, so Chris should check them.
 
-- **Households.** One "Shared screen" device is one household. It has a name, entered when it joins, and it is the unit that counts for Ready and Pens down. A household with a second screen can just join as a second household. Typists are separate participants. They are not attached to a household and they don't appear in the household list. They appear only as columns on the post-round screen. The 4-household cap counts shared screens only.
+- **Households.** One "Shared screen" device is one household. It has a name, entered when it joins, and it is the unit that counts for Ready and Pens down. A household with a second screen can just join as a second household. Typists are separate participants. They are not attached to a household and they don't appear in the household list. They appear only as columns on the post-round screen. There is no cap on the number of households. Only the overall participant cap (24 per room, my call) applies.
 - **Typist devices do not show the board.** A typist reads the board off their household's shared screen and uses their own device only to type. This keeps the app from becoming a phone game. The typist device shows a text box and the player's own list, and no timer. It switches to the results when the post-round screen opens.
   **Chris wants to revisit this one.** Treat it as provisional: build the typist device so showing the board on it later is a small change.
 - **Countdown audio (Chris's idea).** The pre-round countdown might play audio tones, which also helps households on a voice call. Not required for the first build. Leave room for it.
