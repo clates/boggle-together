@@ -35,7 +35,7 @@ describe('room-code words match the database', () => {
   })
 
   it('leaves out the words that sound alike on a call (review round 1)', () => {
-    for (const w of ['SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE'])
+    for (const w of ['SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE', 'SEAWEED', 'CRESS', 'IVY', 'ELM', 'CHIVE'])
       expect(ROOM_WORDS).not.toContain(w)
   })
 

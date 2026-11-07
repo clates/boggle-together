@@ -23,7 +23,8 @@ select ok(exists (select 1 from words_new where w = 'PECAN'), 'PECAN is a word')
 select is(
   (select count(*)::int from words_new where w in (
     'FIR', 'YEW', 'PINE', 'BEECH', 'MAHOGANY',
-    'SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE')),
+    'SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE',
+    'SEAWEED', 'CRESS', 'IVY', 'ELM', 'CHIVE')),
   0, 'retired and sound-alike words are not in the list');
 
 -- 30 users x 10 rooms each (the per-user hourly limit) = 300 generated codes
