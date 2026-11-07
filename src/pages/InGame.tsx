@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Board, { type Rotation } from '../components/Board'
 import DogEar from '../components/DogEar'
-import { playCountdownTone } from '../lib/audio'
+import { useRoundAudio } from '../lib/audio/useRoundAudio'
 import { drainColor } from '../lib/drain'
 import { progress } from '../lib/phase'
 import type { useRoom } from '../lib/useRoom'
@@ -14,12 +14,6 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : 'Something went
 
 function Countdown({ startAt, now }: { startAt: number; now: number }) {
   const seconds = Number.isFinite(startAt) ? Math.max(0, Math.ceil((startAt - now) / 1000)) : 0
-  const lastTone = useRef<number | null>(null)
-  useEffect(() => {
-    if (lastTone.current === seconds) return
-    lastTone.current = seconds
-    playCountdownTone(seconds)
-  }, [seconds])
   return (
     <div className="countdown">
       <p className="countdown-number" data-testid="countdown" aria-live="assertive">
@@ -101,8 +95,21 @@ function Locked({ room }: { room: InGameRoom }) {
   )
 }
 
+function SoundPrompt({ onEnable }: { onEnable: () => void }) {
+  return (
+    <div className="sound-prompt">
+      <button type="button" className="sound-enable" onClick={onEnable}>
+        🔈 Tap to enable sound
+      </button>
+      <p className="sound-note">On an iPad, the side switch (mute) silences sound.</p>
+    </div>
+  )
+}
+
 export default function InGame({ code, room }: { code: string; room: InGameRoom }) {
   const { phase, board, serverNowMs } = room
+  const audio = useRoundAudio(room.room, phase, serverNowMs)
+  const prompt = audio.status === 'locked'
   const [rotation, setRotation] = useState<Rotation>(0)
   const rotate = () => setRotation((r) => (((r + 90) % 360) as Rotation))
 
@@ -111,7 +118,7 @@ export default function InGame({ code, room }: { code: string; room: InGameRoom 
   const p = phase === 'playing' ? progress(times, now) : 0
 
   return (
-    <div className={`ingame ingame-${phase}`} data-testid="in-game">
+    <div className={`ingame ingame-${phase}${prompt ? ' ingame-sound-prompt' : ''}`} data-testid="in-game">
       {p > 0 && (
         <div
           className="fill"
@@ -128,7 +135,8 @@ export default function InGame({ code, room }: { code: string; room: InGameRoom 
         </div>
       )}
       {phase === 'locked' && <Locked room={room} />}
-      <DogEar code={code} onRotate={rotate} />
+      {prompt && <SoundPrompt onEnable={audio.unlock} />}
+      <DogEar code={code} onRotate={rotate} sound={{ muted: audio.muted, onToggle: audio.toggleMute }} />
     </div>
   )
 }

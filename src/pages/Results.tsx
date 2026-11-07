@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import Board from '../components/Board'
 import HouseholdList from '../components/HouseholdList'
 import LeaveRoom from '../components/LeaveRoom'
+import { unlockAudio } from '../lib/audio'
 import type { Client } from '../lib/supabase'
 import type { Participant, useRoom } from '../lib/useRoom'
 import { useRoundWords, type RoundWordsStatus } from '../lib/useRoundWords'
@@ -159,8 +160,9 @@ export default function Results({
       ? {
           ready: me.ready,
           canForce,
-          onReady: () => run(() => actions.setReady(!me.ready)),
-          onStartAnyway: () => run(() => actions.startAnyway()),
+          // the tap unlocks audio for the next round's cues (households only)
+          onReady: () => (unlockAudio(), run(() => actions.setReady(!me.ready))),
+          onStartAnyway: () => (unlockAudio(), run(() => actions.startAnyway())),
           error,
         }
       : null

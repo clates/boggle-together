@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import HouseholdList from '../components/HouseholdList'
 import LeaveRoom from '../components/LeaveRoom'
+import { unlockAudio } from '../lib/audio'
 import { useRoom } from '../lib/useRoom'
 import { supabase } from '../lib/supabase'
 import InGame from './InGame'
@@ -40,11 +41,11 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
         <button type="button" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
       </p>
       <HouseholdList participants={participants} meId={me?.id} onRemove={(id) => void run(() => actions.removeParticipant(id))} />
-      <button type="button" className="primary" onClick={() => run(() => actions.setReady(!me?.ready))}>
+      <button type="button" className="primary" onClick={() => (unlockAudio(), run(() => actions.setReady(!me?.ready)))}>
         Ready? {me?.ready ? '✅' : '⏳'}
       </button>
       {canForce && (
-        <button type="button" onClick={() => run(() => actions.startAnyway())}>
+        <button type="button" onClick={() => (unlockAudio(), run(() => actions.startAnyway()))}>
           Start anyway
         </button>
       )}

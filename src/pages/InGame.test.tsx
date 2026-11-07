@@ -2,9 +2,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant, RoomRow } from '../lib/useRoom'
 
-const tone = vi.hoisted(() => vi.fn())
-vi.mock('../lib/audio', () => ({ playCountdownTone: tone }))
-
+import { resetAudio } from '../lib/audio'
+import { FakeAudioContext } from '../lib/audio/fakeAudioContext'
 import InGame, { type InGameRoom } from './InGame'
 
 const LETTERS = ['T', 'E', 'R', 'S', 'A', 'N', 'O', 'I', 'L', 'D', 'P', 'M', 'U', 'C', 'H', 'Qu']
@@ -47,8 +46,26 @@ function css(color: string) {
   return probe.style.background
 }
 
-beforeEach(() => tone.mockClear())
-afterEach(() => vi.useRealTimers())
+let ctx: FakeAudioContext
+let Ctor: ReturnType<typeof vi.fn>
+function installAudio(opts: ConstructorParameters<typeof FakeAudioContext>[0] = {}) {
+  ctx = new FakeAudioContext(opts)
+  Ctor = vi.fn(function () {
+    return ctx
+  })
+  vi.stubGlobal('AudioContext', Ctor)
+  resetAudio()
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  installAudio()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+  resetAudio()
+})
 
 describe('InGame playing', () => {
   it('fill is 100% tall and green at progress 1', () => {
@@ -107,26 +124,6 @@ describe('InGame countdown', () => {
     expect(screen.getByTestId('countdown')).toHaveTextContent('4')
     expect(screen.getByText(/pens ready/i)).toBeInTheDocument()
   })
-
-  it('plays the tone once per distinct second', () => {
-    let now = T0 - 4_500
-    const room = makeRoom({ phase: 'countdown', now: () => now })
-    const { rerender } = render(<InGame code="ABCD" room={room} />)
-    expect(tone).toHaveBeenCalledTimes(1)
-    expect(tone).toHaveBeenLastCalledWith(5)
-    for (const t of [T0 - 4_400, T0 - 4_100, T0 - 4_010]) {
-      now = t
-      rerender(<InGame code="ABCD" room={{ ...room }} />)
-    }
-    expect(tone).toHaveBeenCalledTimes(1)
-    now = T0 - 3_900
-    rerender(<InGame code="ABCD" room={{ ...room }} />)
-    expect(tone).toHaveBeenCalledTimes(2)
-    expect(tone).toHaveBeenLastCalledWith(4)
-    now = T0 - 3_800
-    rerender(<InGame code="ABCD" room={{ ...room }} />)
-    expect(tone).toHaveBeenCalledTimes(2)
-  })
 })
 
 describe('InGame locked', () => {
@@ -171,5 +168,97 @@ describe('InGame locked', () => {
     const show = screen.getByRole('button', { name: 'Show results' })
     await act(async () => fireEvent.click(show))
     expect(room.actions.showResults).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('InGame sound (household)', () => {
+  const freqs = () => ctx.live.map((o) => o.frequency.value)
+
+  it('schedules the remaining cues of the round on the audio clock', () => {
+    render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + 61_000 })} />)
+    // chime pair at 120 s, 10 last-seconds ticks, buzzer
+    expect(freqs()).toEqual([660, 880, ...Array(10).fill(1000), 220])
+    const buzzer = ctx.live[ctx.live.length - 1]
+    expect(buzzer.startAt).toBeCloseTo(ROUND_MS / 1000 - 61, 6)
+  })
+
+  it('schedules the countdown ticks and go tone during the countdown', () => {
+    render(<InGame code="ABCD" room={makeRoom({ phase: 'countdown', now: () => T0 - 2_500 })} />)
+    expect(freqs().slice(0, 3)).toEqual([440, 440, 880])
+    expect(ctx.live[2].startAt).toBeCloseTo(2.5, 6) // go at start_at
+  })
+
+  it('cancels everything on unmount', () => {
+    const { unmount } = render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + 61_000 })} />)
+    expect(ctx.live.length).toBeGreaterThan(0)
+    unmount()
+    expect(ctx.live).toHaveLength(0)
+    expect(ctx.oscillators.every((o) => o.disconnected)).toBe(true)
+  })
+
+  it('a new round replaces the old schedule', () => {
+    const room = makeRoom({ phase: 'countdown', now: () => T0 - 2_500 })
+    const { rerender } = render(<InGame code="ABCD" room={room} />)
+    const old = [...ctx.live]
+    const t1 = T0 + 1_000
+    rerender(
+      <InGame
+        code="ABCD"
+        room={{ ...room, room: { ...room.room!, round: 2, start_at: new Date(t1).toISOString(), ends_at: new Date(t1 + 12_000).toISOString() } }}
+      />,
+    )
+    expect(old.every((o) => o.cancelled)).toBe(true)
+    // 12 s round: no chime
+    expect(freqs()).toEqual([440, 440, 440, 880, ...Array(10).fill(1000), 220])
+  })
+
+  it('shows a tap-to-enable prompt when audio is locked, and tapping it schedules the cues', async () => {
+    installAudio({ state: 'suspended' })
+    const { container } = render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + 61_000 })} />)
+    const btn = screen.getByRole('button', { name: /tap to enable sound/i })
+    expect(screen.getByText(/side switch/i)).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/\d+:\d\d/)
+    expect(ctx.oscillators).toHaveLength(0)
+    await act(async () => fireEvent.click(btn))
+    expect(ctx.resumeCalls).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: /tap to enable sound/i })).not.toBeInTheDocument()
+    expect(ctx.live).toHaveLength(13)
+  })
+
+  it('a muted device shows no prompt and creates no audio context', () => {
+    localStorage.setItem('boggle.muted', '1')
+    installAudio({ state: 'suspended' })
+    render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + 61_000 })} />)
+    expect(screen.queryByRole('button', { name: /enable sound/i })).not.toBeInTheDocument()
+    expect(Ctor).not.toHaveBeenCalled()
+  })
+
+  it('the dog-ear Sound toggle mutes (cancels) and unmutes (reschedules), and is remembered', async () => {
+    render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + 61_000 })} />)
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Sound: on' })))
+    expect(screen.getByRole('button', { name: 'Sound: off' })).toBeInTheDocument()
+    expect(ctx.live).toHaveLength(0)
+    expect(localStorage.getItem('boggle.muted')).toBe('1')
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Sound: off' })))
+    expect(screen.getByRole('button', { name: 'Sound: on' })).toBeInTheDocument()
+    expect(ctx.live).toHaveLength(13)
+    expect(localStorage.getItem('boggle.muted')).toBe('0')
+  })
+
+  it('the buzzer keeps sounding when the screen flips to results right after it starts', () => {
+    const { unmount } = render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + ROUND_MS - 2_000 })} />)
+    const buzzer = ctx.live[ctx.live.length - 1]
+    expect(buzzer.frequency.value).toBe(220)
+    ctx.currentTime = buzzer.startAt! + 0.05
+    unmount() // Room swaps InGame for Results
+    expect(buzzer.cancelled).toBe(false)
+    expect(buzzer.stopCalls).toEqual([buzzer.startAt! + 0.9])
+    expect(buzzer.disconnected).toBe(false)
+  })
+
+  it('locked screen after the buzzer schedules nothing', () => {
+    render(<InGame code="ABCD" room={makeRoom({ phase: 'locked', now: () => T0 + ROUND_MS + 1 })} />)
+    expect(ctx.oscillators).toHaveLength(0)
   })
 })
