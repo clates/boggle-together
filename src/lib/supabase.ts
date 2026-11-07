@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { readConfig } from './config'
 
 export type Client = SupabaseClient
 
@@ -22,10 +23,9 @@ export function makeClient(url: string, key: string, baseFetch?: typeof fetch): 
   })
 }
 
-export const supabase: Client = makeClient(
-  import.meta.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321',
-  import.meta.env.VITE_SUPABASE_ANON_KEY ?? 'missing-anon-key',
-)
+// Throws at startup in a production build without VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.
+const config = readConfig(import.meta.env)
+export const supabase: Client = makeClient(config.url, config.key)
 
 const inflight = new WeakMap<object, Promise<string>>()
 
