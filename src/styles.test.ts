@@ -1,10 +1,10 @@
 // Guard: every colour lives in the :root token block of index.css. Rules and components use var(--token),
 // so a stray literal (an old #fff, a quick "red") cannot creep back in and break the palette's contrast.
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import indexCss from './index.css?raw'
 
-const SRC = join(__dirname)
+// every component and page source, as text
+const sources = import.meta.glob<string>(['./**/*.tsx', '!./**/*.test.tsx'], { query: '?raw', import: 'default', eager: true })
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '')
 
 const NAMED = ['white', 'black', 'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'gray', 'grey', 'silver', 'navy', 'maroon', 'teal', 'olive', 'lime', 'aqua', 'fuchsia', 'ivory', 'beige', 'gold', 'crimson', 'tomato']
@@ -23,7 +23,7 @@ function declarationsOutsideRoot(css: string): string[] {
 }
 
 describe('index.css colour tokens', () => {
-  const css = readFileSync(join(SRC, 'index.css'), 'utf8')
+  const css = indexCss
 
   it('has no colour literal outside the :root token block', () => {
     const offenders = declarationsOutsideRoot(css).filter((d) => LITERAL.test(d.split(': ').slice(1).join(': ')))
@@ -41,12 +41,10 @@ describe('index.css colour tokens', () => {
 })
 
 describe('components', () => {
-  const files = (readdirSync(SRC, { recursive: true }) as string[]).filter((f) => f.endsWith('.tsx') && !f.includes('.test.'))
-
   it('set no colours inline (only the timer passes --fill / --fill-edge)', () => {
     const offenders: string[] = []
-    for (const f of files) {
-      const code = readFileSync(join(SRC, f), 'utf8')
+    expect(Object.keys(sources).length).toBeGreaterThan(10)
+    for (const [f, code] of Object.entries(sources)) {
       for (const [style] of code.matchAll(/style=\{\{[\s\S]*?\}\}/g))
         if (/color|background|fill|stroke|border|shadow|outline/i.test(style)) offenders.push(`${f}: ${style}`)
       for (const [attr] of code.matchAll(/\b(?:fill|stroke|color|stop-color)=["{][^"}]*["}]/g)) offenders.push(`${f}: ${attr}`)
@@ -56,7 +54,7 @@ describe('components', () => {
   })
 
   it('the timer colours come in as custom properties', () => {
-    const timer = readFileSync(join(SRC, 'components', 'TimerFill.tsx'), 'utf8')
+    const timer = sources['./components/TimerFill.tsx']
     expect(timer).toMatch(/'--fill': drainColor\(/)
     expect(timer).toMatch(/'--fill-edge': drainEdge\(/)
   })
