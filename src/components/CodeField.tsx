@@ -66,6 +66,7 @@ export default function CodeField({
       const typedAtEnd = raw.length >= value.length && atEnd
       const digitEditInside = isComplete(value) && !atEnd && w === value.split('-')[0]
       if ((isKnownWord(w) && !digitEditInside) || (typedAtEnd && !suggestWord(w))) go(next.value)
+      else if (digitEditInside && isKnownWord(w)) setHint(`Press Go to open ${next.value}`)
     }
   }
 

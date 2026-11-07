@@ -144,8 +144,20 @@ describe('CodeField while editing a complete code', () => {
     await userEvent.keyboard('7')
     expect(input).toHaveValue('PECAN-2675')
     expect(onGo).not.toHaveBeenCalled()
+    expect(screen.getByText('Press Go to open PECAN-2675')).toBeInTheDocument()
     await userEvent.keyboard('{Enter}')
     expect(onGo).toHaveBeenCalledExactlyOnceWith('PECAN-2675')
+  })
+
+  it('the Go hint goes away once the code is no longer waiting', async () => {
+    render(<CodeField label="Room code" initial="PECAN-2655" onGo={vi.fn()} />)
+    const input = screen.getByLabelText('Room code') as HTMLInputElement
+    input.focus()
+    input.setSelectionRange(8, 8)
+    await userEvent.keyboard('7')
+    expect(screen.getByText(/press go/i)).toBeInTheDocument()
+    await userEvent.keyboard('{Backspace}')
+    expect(screen.queryByText(/press go/i)).toBeNull()
   })
 
   it('fixing the last digit of a complete code (delete, retype at the end) jumps', async () => {
