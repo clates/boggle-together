@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import HouseholdList from '../components/HouseholdList'
 import { useRoom } from '../lib/useRoom'
-import InGameStub from './InGame'
+import InGame from './InGame'
 import JoinForm from './JoinForm'
 import ResultsStub from './Results'
 import TypistStub from './Typist'
@@ -80,7 +80,7 @@ export default function Room() {
     case 'countdown':
     case 'playing':
     case 'locked':
-      return isTypist ? <TypistStub phase={phase} code={code} /> : <InGameStub phase={phase} code={code} />
+      return isTypist ? <TypistStub phase={phase} code={code} /> : <InGame code={code} room={room} />
     default:
       return <ResultsStub participants={participants} me={me} onToggleReady={() => void actions.setReady(!me?.ready)} />
   }

@@ -131,7 +131,7 @@ describe('Room', () => {
     const h = p('1', 'household'), t = p('2', 'typist')
     setHook({ me: h, participants: [h, t], phase: 'playing' })
     const r = renderRoom()
-    expect(screen.getByTestId('in-game-stub')).toHaveTextContent('playing')
+    expect(screen.getByTestId('in-game')).toHaveClass('ingame-playing')
     r.unmount()
     setHook({ me: t, participants: [h, t], phase: 'countdown' })
     const r2 = renderRoom()
