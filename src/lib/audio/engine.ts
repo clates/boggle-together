@@ -18,6 +18,7 @@ export function createAudioEngine({ createContext, prefs }: { createContext: () 
   let unavailable = false
   let muted = prefs.read()
   let plan: { cues: Cue[]; serverNowMs: () => number } | null = null
+  let plannedState: AudioContextState | null = null // context state the current voices were planned for
   const voices = new Set<Voice>()
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
@@ -38,7 +39,7 @@ export function createAudioEngine({ createContext, prefs }: { createContext: () 
     master.connect(ctx.destination)
     // suspended -> running (unlock), or an interruption ending: the audio clock stood still, so re-plan
     ctx.onstatechange = () => {
-      refresh()
+      if (ctx?.state !== plannedState) refresh() // unlock() may already have re-planned
       notify()
     }
     return ctx
@@ -98,6 +99,7 @@ export function createAudioEngine({ createContext, prefs }: { createContext: () 
   // (Re)build the schedule from the current plan: only cues still ahead, only when audible.
   function refresh() {
     stopVoices()
+    plannedState = ctx?.state ?? null
     if (!plan || muted || !ctx || ctx.state !== 'running') return
     const nowMs = plan.serverNowMs()
     // sound leaves the speaker outputLatency after its context time; start that much earlier
@@ -146,7 +148,7 @@ export function createAudioEngine({ createContext, prefs }: { createContext: () 
         } catch {
           /* still locked */
         }
-        refresh()
+        if (c.state !== plannedState) refresh()
       }
       notify()
     },
