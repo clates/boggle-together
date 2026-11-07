@@ -141,12 +141,17 @@ export function useRoom(code: string, client: Client = supabase) {
         if (!cancelled) retryTimer = setTimeout(setup, 1000)
       }
     }
+    // Backstop: Realtime can silently drop changes (e.g. cold start), so poll every 5 s while visible.
+    const poll = setInterval(() => {
+      if (document.visibilityState !== 'hidden') void run()
+    }, 5000)
     void run()
     void setup()
 
     return () => {
       cancelled = true
       clearTimeout(retryTimer)
+      clearInterval(poll)
       document.removeEventListener('visibilitychange', onVisibility)
       authSub?.unsubscribe()
       if (channel) void client.removeChannel(channel)
