@@ -8,12 +8,15 @@ const DESKTOP = { width: 1024, height: 768 }
 const PHONE = { width: 390, height: 844 }
 
 const IN_GAME_BOARD = '[data-testid="in-game"] [data-testid="board"]'
+const TYPIST_BOARD = '[data-testid="typist"] [data-testid="board"]'
+/** Either kind of in-round board (households and typist phones) */
+const ROUND_BOARD = `${IN_GAME_BOARD}, ${TYPIST_BOARD}`
 
 type Player = {
   name: string
   context: BrowserContext
   page: Page
-  /** Node-side Date.now() each time an in-game board appears (comparable across contexts, even with a faked page clock) */
+  /** Node-side Date.now() each time an in-round board appears (comparable across contexts, even with a faked page clock) */
   boardSeen: number[]
   /** The page's own Date.now() at the same moments */
   boardSeenPage: number[]
@@ -44,7 +47,7 @@ async function newPlayer(
       present = now
     }
     new MutationObserver(check).observe(document, { childList: true, subtree: true })
-  }, IN_GAME_BOARD)
+  }, ROUND_BOARD)
   const page = await context.newPage()
   return { name, context, page, boardSeen, boardSeenPage }
 }
@@ -104,6 +107,22 @@ async function typeWord(p: Player, word: string) {
   await expect(p.page.getByRole('listitem').filter({ hasText: new RegExp(`^${word}$`, 'i') })).toBeVisible()
 }
 
+/** A typist phone during the round: the same board as the households, the timer fill, no clock text. */
+async function expectTypistBoard(p: Player, letters: string[]) {
+  await expect(p.page.locator(TYPIST_BOARD)).toBeVisible()
+  expect(await tiles(p, TYPIST_BOARD)).toEqual(letters)
+  await expect(p.page.getByTestId('fill')).toBeVisible()
+  expect(await p.page.locator('body').innerText()).not.toMatch(/\d+:\d\d/)
+}
+
+/** Gap between the first household board and each typist's board appearing, for the given round index. */
+function typistGap(households: Player[], typists: Player[], index: number): number {
+  const all = [...households, ...typists].map((p) => p.boardSeen[index])
+  const gap = Math.max(...all) - Math.min(...all)
+  console.log(`[timing] households + typists board appearance gap ${gap} ms`)
+  return gap
+}
+
 async function pensDownAll(households: Player[], everyone: Player[]) {
   await Promise.all(households.map((p) => expect(p.page.getByRole('button', { name: 'Pens down!' })).toBeVisible({ timeout: 20_000 })))
   for (const p of households) await p.page.getByRole('button', { name: 'Pens down!' }).click()
@@ -151,19 +170,16 @@ test('full game', async ({ browser }) => {
   expect(round1).toHaveLength(16)
   expect(await tiles(grandma)).toEqual(round1)
 
-  // Typists type; they never see a board
-  await Promise.all(typists.map((p) => expect(p.page.getByLabel('Word')).toBeVisible()))
+  // Typists see the same board (and the draining fill) at the same moment, then type
+  for (const p of typists) await expectTypistBoard(p, round1)
+  await expect.poll(() => typists.every((p) => p.boardSeen.length > 0)).toBe(true)
+  expect(typistGap(households, typists, 0)).toBeLessThanOrEqual(BOARD_SYNC_MS)
   await typeWord(chris, 'rain')
   await typeWord(chris, 'sand')
   await typeWord(jo, 'sand')
   await typeWord(jo, 'hold')
-  for (const p of typists) {
-    await expect(p.page.getByTestId('board')).toHaveCount(0)
-    expect(p.boardSeen).toHaveLength(0)
-  }
 
   await pensDownAll(households, everyone)
-  for (const p of typists) expect(p.boardSeen).toHaveLength(0)
 
   // Results: shared word struck through in both columns
   for (const p of everyone) {
@@ -178,7 +194,9 @@ test('full game', async ({ browser }) => {
   // Round 2
   for (const p of households) await readyButton(p).click()
   await Promise.all(households.map((p) => expect(p.page.getByTestId('countdown')).toBeVisible()))
-  await Promise.all(typists.map((p) => expect(p.page.getByRole('heading', { name: 'Get ready...' })).toBeVisible()))
+  // typists count down too, with no board yet
+  await Promise.all(typists.map((p) => expect(p.page.getByTestId('countdown')).toBeVisible()))
+  for (const p of typists) await expect(p.page.getByTestId('board')).toHaveCount(0)
   const gap2 = await boardsAppear(households, [1, 1])
   expect(gap2).toBeLessThanOrEqual(BOARD_SYNC_MS)
   expect(roomRound(code)).toBe(2)
@@ -190,13 +208,15 @@ test('full game', async ({ browser }) => {
   if (round2.join() === round1.join()) console.log('[note] round 2 rolled the same board as round 1')
   else expect(round2).not.toEqual(round1)
 
-  // Typists: back to typing with empty lists
+  // Typists: the new board, back to typing with empty lists
   for (const p of typists) {
+    await expectTypistBoard(p, round2)
     await expect(p.page.getByLabel('Word')).toBeVisible()
     await expect(p.page.getByText('0 words')).toBeVisible()
     await expect(p.page.getByRole('listitem')).toHaveCount(0)
-    await expect(p.page.getByTestId('board')).toHaveCount(0)
   }
+  await expect.poll(() => typists.every((p) => p.boardSeen.length > 1)).toBe(true)
+  expect(typistGap(households, typists, 1)).toBeLessThanOrEqual(BOARD_SYNC_MS)
 })
 
 test('refresh mid-round keeps place', async ({ browser }) => {
