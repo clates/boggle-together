@@ -31,7 +31,7 @@ select lives_ok($$select public.set_ready('ROOM-B', true)$$, 'household a2 ready
 select lives_ok($$select public.start_anyway('ROOM-B')$$, 'start_anyway accepted with 2 of 4 ready');
 reset role;
 select is((select round from public.rooms where code = 'ROOM-B'), 1, 'start_anyway started round 1');
-select is((select count(*)::int from public.participants where ready or pens_down), 0, 'ready and pens_down cleared on start');
+select is((select count(*)::int from public.participants where room_code = 'ROOM-B' and (ready or pens_down)), 0, 'ready and pens_down cleared on start');
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a3","role":"authenticated"}';
 select throws_ok($$select public.start_anyway('ROOM-B')$$, null, 'Round already in progress', 'start_anyway refused mid-round');

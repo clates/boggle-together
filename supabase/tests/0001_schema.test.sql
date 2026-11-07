@@ -21,7 +21,7 @@ select matches((select v from ctx where k = 'code'), '^[A-Z]+-[0-9]{2}$', 'creat
 
 reset role;
 select is((select count(*)::int from public.rooms where code = (select v from ctx where k = 'code')), 1, 'create_room creates a room row');
-select is((select count(*)::int from public.participants), 0, 'creator is not automatically a participant');
+select is((select count(*)::int from public.participants where room_code = (select v from ctx where k = 'code')), 0, 'creator is not automatically a participant');
 
 set local role authenticated;
 select lives_ok(
