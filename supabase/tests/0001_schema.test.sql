@@ -1,5 +1,5 @@
 begin;
-select plan(28);
+select plan(30);
 
 -- Fixed users (id equals auth.uid())
 -- u1 creates/joins, u2 is an outsider, u3.. fill rooms.
@@ -17,7 +17,7 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","r
 
 insert into ctx select 'code', public.create_room();
 
-select matches((select v from ctx where k = 'code'), '^[A-Z]+-[0-9]{2}$', 'create_room returns WORD-NN');
+select matches((select v from ctx where k = 'code'), '^[A-Z]+-[0-9]{4}$', 'create_room returns WORD-NNNN');
 
 reset role;
 select is((select count(*)::int from public.rooms where code = (select v from ctx where k = 'code')), 1, 'create_room creates a room row');
@@ -76,6 +76,15 @@ from generate_series(1, 15) i;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000399","role":"authenticated"}';
 select throws_ok($$select public.join_room((select v from ctx where k = 'code'), 'household', 'Late')$$, null, 'Room is full', '25th participant refused');
+
+-- collision retry: the same random seed makes the first candidate collide, so a retry picks another code
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
+select setseed(0.42);
+insert into ctx select 'seed1', public.create_room();
+select setseed(0.42);
+insert into ctx select 'seed2', public.create_room();
+select isnt((select v from ctx where k = 'seed2'), (select v from ctx where k = 'seed1'), 'colliding code is retried');
+select matches((select v from ctx where k = 'seed2'), '^[A-Z]+-[0-9]{4}$', 'retried code is WORD-NNNN');
 
 -- rate limit: user 7 already may create 10 per hour
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000007","role":"authenticated"}';

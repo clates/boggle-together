@@ -114,7 +114,7 @@ begin
   end if;
   loop
     v_code := v_words[1 + floor(random() * array_length(v_words, 1))::int]
-              || '-' || lpad(floor(random() * 100)::int::text, 2, '0');
+              || '-' || lpad(floor(random() * 10000)::int::text, 4, '0');  -- 640,000 codes
     begin
       insert into public.rooms (code, created_by) values (v_code, v_uid);
       return v_code;

@@ -50,7 +50,7 @@ Two actions: **Start a room** and **Join a room** (enter a code). Nothing else.
 
 The same screen serves as the lobby before the first round and as the results screen after each round (described below). Shows:
 
-- The room name or invite code (a short, readable code such as `MAPLE-42`) and a link that joins directly.
+- The room name or invite code (a short, readable code such as `MAPLE-4207`: a tree word, a dash and four digits) and a link that joins directly.
 - A list of households with a ready indicator for each.
 - A **Ready?** button or toggle for each household.
 - The board, when there is one.
