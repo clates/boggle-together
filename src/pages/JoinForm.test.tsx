@@ -27,7 +27,10 @@ describe('JoinForm', () => {
     expect(shared).toBeChecked()
     expect(phone).not.toBeChecked()
     expect(shared).toHaveAccessibleDescription(/one device per household/i)
-    expect(phone).toHaveAccessibleDescription(/your own phone/i)
+    expect(phone).toHaveAccessibleDescription(
+      'Enter the words you find on your own phone as you play. The results show which of your words no other typist found.',
+    )
+    expect(screen.queryByText(/nobody else/i)).toBeNull()
     expect(screen.queryByText('Type my words')).toBeNull()
   })
 

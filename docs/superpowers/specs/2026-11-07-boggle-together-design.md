@@ -52,7 +52,7 @@ Room codes are mostly read out loud on the call ("pecan 2654"), so joining forgi
 
 The same screen serves as the lobby before the first round and as the results screen after each round (described below). Shows:
 
-- The room name or invite code (a short, readable code such as `MAPLE-4207`: a tree word, a dash and four digits) and a link that joins directly.
+- The room name or invite code (a short code that is easy to read out, WORD-NNNN such as `PECAN-2654`: a one- or two-syllable plant or garden word from a fixed list chosen to be distinct when spoken, a dash and four digits) and a link that joins directly.
 - A list of households with a ready indicator for each.
 - A **Ready?** button or toggle for each household.
 - The board, when there is one.
@@ -96,7 +96,7 @@ Mockups from the brainstorm are in `docs/superpowers/mockups/`. Treat them as in
 
 This part was not discussed in detail, so these are my calls.
 
-- A digital player joins the room on their own device using the same code or link and enters a name. They choose between "Shared screen" (one device per household, usually a tablet or laptop in the middle of the table, showing the board for everyone around it) and "Type on my phone" (enter the words you find on your own phone; the app shows which of your words nobody else found). Each choice is a card with that one line of explanation. A link with `?m=type` (for a QR code) preselects "Type on my phone". The device remembers the last name and choice.
+- A digital player joins the room on their own device using the same code or link and enters a name. They choose between "Shared screen" (one device per household, usually a tablet or laptop in the middle of the table, showing the board for everyone around it) and "Type on my phone" (enter the words you find on your own phone; the results show which of your words no other typist found). Each choice is a card with that one line of explanation. A link with `?m=type` (for a QR code) preselects "Type on my phone". The device remembers the last name and choice.
 - During a round, a "Type on my phone" device shows a text box and the player's own list so far. Press Enter to add a word. Words are uppercased and de-duplicated, and anything shorter than 3 letters is ignored.
 - A player sees only their own list during the round. Nobody sees anyone else's list until the post-round screen.
 - No validation against the dictionary or against the board in the MVP.

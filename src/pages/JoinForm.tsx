@@ -13,7 +13,7 @@ const MODES: { kind: Mode; title: string; line: string }[] = [
   {
     kind: 'typist',
     title: 'Type on my phone',
-    line: 'Enter the words you find on your own phone as you play. The app shows which of your words nobody else found.',
+    line: 'Enter the words you find on your own phone as you play. The results show which of your words no other typist found.',
   },
 ]
 

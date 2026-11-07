@@ -106,7 +106,7 @@ The app is a static site plus a Supabase project. There is no server of your own
    ```
 
 5. Build with your project's settings (Project Settings > API): set `VITE_SUPABASE_URL` to the project URL and `VITE_SUPABASE_ANON_KEY` to the anon (or publishable) key. A production build without them shows "This site is not configured".
-6. Deploy the static build (`npm run build`, output in `dist/`) to Vercel or any static host. Set the two variables in the host's environment settings, and add an SPA rewrite that serves `index.html` for every path. Without it, invite links such as `/r/MAPLE-4207` return 404. On Vercel that is a `vercel.json` with:
+6. Deploy the static build (`npm run build`, output in `dist/`) to Vercel or any static host. Set the two variables in the host's environment settings, and add an SPA rewrite that serves `index.html` for every path. Without it, invite links such as `/r/PECAN-2654` return 404. On Vercel that is a `vercel.json` with:
 
    ```json
    { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
