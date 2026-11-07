@@ -1,5 +1,95 @@
-:root { font-family: system-ui, sans-serif; font-size: 20px; color: #222; background: #fff; }
-body { margin: 0; background: #fff; }
+/* Boggle Together: design tokens ("Table Blue"). Every colour in the app lives in this block; the rules
+   below use only var(--token) (src/styles.test.ts enforces it). Hex values are the sRGB rendering of the
+   OKLCH in each comment. Light theme only. */
+:root {
+  /* ---- surfaces ---- */
+  --bg: #E4F2FE;                 /* oklch(95.5% 0.022 245)  faint blue: page + timer "empty" area */
+  --surface: #F7FBFE;            /* oklch(98.5% 0.006 245)  panels, inputs, dog-ear panel, sticky headers on panels */
+  --line: #B0C0D1;               /* oklch(80% 0.030 250)    decorative dividers only (1.6:1, not for UI edges) */
+  --line-strong: #677689;        /* oklch(56% 0.035 255)    input borders, outline buttons in neutral use (>= 4:1) */
+
+  /* ---- tiles (the "cubes") ---- */
+  --tile-face: #FCF5DF;          /* oklch(97% 0.030 92)     ivory */
+  --tile-shade: #E5D6B6;         /* oklch(88% 0.045 85)     ivory in shadow: lower bevel, dog-ear underside */
+  --tile-edge: #162137;          /* = --ink                 tile outline: >= 3.7:1 on bg and every timer colour */
+  --tile-ink: #162137;           /* = --ink                 14.7:1 on ivory (AAA) */
+  --tile-drop: rgb(22 33 55 / 0.22); /* soft shadow under tiles and raised panels */
+
+  /* ---- text ---- */
+  --ink: #162137;                /* oklch(25% 0.045 262)    primary text, unique words, room code */
+  --ink-2: #404E63;              /* oklch(42% 0.040 258)    secondary text, labels, subtle buttons */
+  --ink-muted: #606D7D;          /* oklch(53% 0.030 255)    helper text, counts, shared (struck) words: 4.6:1 on bg */
+  --unique-word: var(--ink);
+  --shared-word: var(--ink-muted);
+  --link: #234993;               /* = --cta-secondary; always underlined */
+
+  /* ---- primary CTA: red ---- */
+  --cta-primary: #BA1C2D;        /* oklch(51% 0.190 23)     white text 6.4:1 */
+  --cta-primary-hover: #A50B22;  /* oklch(46% 0.180 23) */
+  --cta-primary-pressed: #8D091C;/* oklch(41% 0.160 23) */
+  --cta-primary-edge: #6F0D17;   /* oklch(35% 0.130 23)     the 3D lip under the button */
+  /* ---- secondary CTA: dark blue ---- */
+  --cta-secondary: #234993;      /* oklch(42% 0.130 262)    white text 8.6:1 */
+  --cta-secondary-hover: #193B7E;   /* oklch(37% 0.120 262) */
+  --cta-secondary-pressed: #102E6A; /* oklch(32% 0.110 262) */
+  --cta-secondary-edge: #0E2654;    /* oklch(28% 0.090 262) */
+  --on-cta: #FFFFFF;
+  /* ---- outline (tertiary) button: blue text + border on surface ---- */
+  --cta-outline-hover: #E9EFF8;    /* blue text 7.4:1 */
+  --cta-outline-pressed: #D9E3F2;  /* blue text 6.6:1 */
+  /* ---- disabled (no opacity tricks: label stays readable, 6.6:1) ---- */
+  --disabled-bg: #DDE4EB;        /* oklch(91.5% 0.012 250) */
+  --disabled-ink: #404E63;       /* = --ink-2 */
+  --disabled-border: #B0C0D1;    /* = --line, dashed */
+
+  /* ---- focus: blue ring with a light inner ring, visible on bg, CTAs and every timer colour ---- */
+  --focus: #1A6FE1;              /* oklch(56% 0.190 258)    4.2:1 on bg */
+  --focus-inner: #F7FBFE;        /* = --surface */
+  --focus-ring: 0 0 0 3px var(--focus-inner), 0 0 0 6px var(--focus);
+
+  /* ---- status ---- */
+  --error: #BA1C2D;              /* = --cta-primary (one red for "act" and "problem"); always paired with text */
+  --success: #21763C;            /* oklch(50% 0.120 150)    ready */
+  --success-soft: #D1F2D7;       /* oklch(93% 0.050 150) */
+  --warning: #915C08;            /* oklch(52% 0.110 70)     text only */
+  --warning-soft: #FEE9BE;       /* oklch(94% 0.060 85)     sound prompt button */
+  --ready-ink: var(--success);
+  --ready-bg: var(--success-soft);
+  --not-ready-ink: var(--ink-2);
+  --not-ready-bg: var(--surface);
+  --not-ready-border: var(--line-strong);
+
+  /* ---- timer (the background). The fill colour itself is computed in src/lib/drain.ts (OKLCH sweep
+     through these keyframes, output as hex); it arrives as --fill / --fill-edge on the .fill element. ---- */
+  --timer-start: #42D0A0;        /* oklch(77% 0.140 166)    bluish green, p = 1 */
+  --timer-mid: #F9D047;          /* oklch(87% 0.155 92)     sunflower, p = 0.5 */
+  --timer-end: #D74A21;          /* oklch(60% 0.185 36)     vermilion, p = 0 (never the CTA red) */
+  --timer-edge-width: 6px;       /* dark "waterline" on top of the fill (drainEdge) */
+  --timer-low-stripes: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.22) 0 9px, transparent 9px 18px);
+
+  /* ---- QR code: plain light and dark modules so every scanner reads it ---- */
+  --qr-light: #FFFFFF;
+  --qr-dark: var(--ink);
+
+  /* ---- typist phone: the word-list card lets the timer show through ---- */
+  --typist-card: rgb(247 251 254 / 0.72); /* --surface at 72% */
+
+  /* ---- shape ---- */
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow-panel: 0 6px 20px rgb(22 33 55 / 0.18);
+  --shadow-flap: rgb(22 33 55 / 0.35);
+
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 20px;
+  color: var(--ink);
+  background: var(--bg);
+
+  color-scheme: light;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); }
+a { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
 main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
 h1 { margin: 0; font-size: 2rem; }
 button, input[type='text'], input:not([type]) { font: inherit; min-height: 48px; padding: 8px 16px; border-radius: 10px; border: 2px solid #222; background: #fff; color: #222; }
@@ -25,8 +115,10 @@ input.code-input { font-size: max(16px, min(1.6rem, 7vw)); font-weight: 800; let
 button.suggestion { align-self: flex-start; font-weight: 700; }
 .not-found { font-size: 1.6rem; line-height: 1.25; }
 .nowrap { white-space: nowrap; }
-.error { color: #b00020; margin: 0; }
-.muted { color: #666; margin: 0; }
+/* Errors never rely on colour alone: a leading "!" (silent for screen readers where supported). */
+.error { color: var(--error); font-weight: 600; margin: 0; }
+.error::before { content: "! "; content: "! " / ""; font-weight: 900; }
+.muted { color: var(--ink-muted); margin: 0; }
 /* sized so the longest code (e.g. MAHOGANY-8888) stays on one line from phones to tablets */
 .code { font-size: min(2.8rem, 8.2vw); font-weight: 800; letter-spacing: 0.08em; margin: 0; white-space: nowrap; }
 .link { word-break: break-all; }
