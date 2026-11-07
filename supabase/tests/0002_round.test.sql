@@ -1,5 +1,5 @@
 begin;
-select plan(76);
+select plan(77);
 
 -- Fixtures: room A (4 households a1-a4, typists b1,b2), room B (4 households, typist b1)
 insert into public.rooms (code, created_by) values ('ROOM-A', '00000000-0000-0000-0000-0000000000a1'), ('ROOM-B', '00000000-0000-0000-0000-0000000000a1');
@@ -81,13 +81,19 @@ reset role;
 -- dice
 select is((select count(*)::int from public.boggle_dice() where array_length(faces, 1) = 6), 16, '16 dice with 6 faces');
 select is((select count(*)::int from public.boggle_dice(), unnest(faces) f where f = 'Qu'), 1, 'exactly one Qu face');
+create temp table rolls (g int, pos int, die int, face text);
+do $$ begin
+  for i in 1..1000 loop
+    insert into rolls select i, pos, die, face from public.boggle_roll();
+  end loop;
+end $$;
 select is((
   select count(*)::int from (
-    select g from generate_series(1, 1000) g, lateral public.boggle_roll() r
-    join public.boggle_dice() d on d.die = r.die
-    group by g
+    select r.g from rolls r join public.boggle_dice() d on d.die = r.die
+    group by r.g
     having count(*) = 16 and count(distinct r.die) = 16 and bool_and(r.face = any (d.faces))
   ) ok), 1000, '1000 boards each use one face from each of the 16 dice');
+select cmp_ok((select count(distinct arr)::int from (select array_agg(face order by pos) arr from rolls group by g) b), '>', 900, 'the 1000 boards are independently generated (over 900 distinct)');
 select cmp_ok((select count(distinct public.generate_board())::int from generate_series(1, 200)), '>', 150, 'boards are shuffled');
 select is(has_function_privilege('authenticated', 'public.generate_board()', 'execute'), false, 'generate_board not callable by clients');
 -- submit_word
