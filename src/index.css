@@ -166,7 +166,10 @@ button.danger { min-width: 64px; }
    along the longer axis) so the dog-ear tab never covers the top-right tile. */
 /* --top / --bottom reserve strips for the sound prompt and the locked bar; the board fits between. */
 .ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
-.fill { position: absolute; left: 0; right: 0; bottom: 0; transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
+/* --fill / --fill-edge come from TimerFill (src/lib/drain.ts): the colour, and a darker waterline along the top. */
+.fill { position: absolute; left: 0; right: 0; bottom: 0; background-color: var(--fill); box-shadow: inset 0 var(--timer-edge-width) 0 var(--fill-edge); transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
+/* The last 20%: faint static stripes, so the end is visible without relying on red. */
+.fill-low { background-image: var(--timer-low-stripes); }
 .stage { position: absolute; inset: var(--top) 0 var(--bottom) 0; display: flex; align-items: center; justify-content: center; }
 .ingame .board-wrap { width: var(--board-size); height: var(--board-size); margin: 0; flex: none; }
 .board-blank { width: var(--board-size); height: var(--board-size); }
