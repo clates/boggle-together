@@ -13,9 +13,10 @@ function toMatrix(qr: { getModuleCount(): number; isDark(r: number, c: number): 
 }
 
 // A QR code for a phone at the same table. The library is loaded only when this is shown,
-// so it never weighs on the home page. Nothing is shown while it loads or if it fails.
+// so it never weighs on the home page. While it loads, the box keeps its size (invisible) so
+// the lobby does not jump when the code appears; if it fails, nothing is shown.
 export default function JoinQr({ url }: { url: string }) {
-  const [matrix, setMatrix] = useState<Matrix | null>(null)
+  const [matrix, setMatrix] = useState<Matrix | null | 'failed'>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -29,27 +30,37 @@ export default function JoinQr({ url }: { url: string }) {
       })
       .then(
         (m) => !cancelled && setMatrix(m),
-        () => {},
+        () => !cancelled && setMatrix('failed'),
       )
     return () => {
       cancelled = true
     }
   }, [url])
 
-  if (!matrix) return null
+  if (matrix === 'failed') return null
+  const caption = <figcaption>Scan with a phone to type words for this game</figcaption>
+  if (!matrix)
+    return (
+      <figure className="join-qr join-qr-pending" aria-hidden="true">
+        <div className="join-qr-code" />
+        {caption}
+      </figure>
+    )
   return (
     <figure className="join-qr">
-      <svg
-        data-testid="join-qr"
-        role="img"
-        aria-label="QR code to join this room on a phone"
-        viewBox={`0 0 ${matrix.size} ${matrix.size}`}
-        shapeRendering="crispEdges"
-      >
-        <rect width={matrix.size} height={matrix.size} fill="#fff" />
-        <path d={matrix.path} fill="#111" />
-      </svg>
-      <figcaption>Scan with a phone to type words for this game</figcaption>
+      <div className="join-qr-code">
+        <svg
+          data-testid="join-qr"
+          role="img"
+          aria-label="QR code to join this room on a phone"
+          viewBox={`0 0 ${matrix.size} ${matrix.size}`}
+          shapeRendering="crispEdges"
+        >
+          <rect width={matrix.size} height={matrix.size} fill="#fff" />
+          <path d={matrix.path} fill="#111" />
+        </svg>
+      </div>
+      {caption}
     </figure>
   )
 }
