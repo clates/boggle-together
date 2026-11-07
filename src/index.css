@@ -92,21 +92,41 @@ a { color: var(--link); text-decoration: underline; text-decoration-thickness: 2
 a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
 main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
 h1 { margin: 0; font-size: 2rem; }
-button, input[type='text'], input:not([type]) { font: inherit; min-height: 48px; padding: 8px 16px; border-radius: 10px; border: 2px solid #222; background: #fff; color: #222; }
-button { cursor: pointer; }
-button.primary { background: #222; color: #fff; }
-button:disabled { opacity: 0.5; }
-label { display: flex; flex-direction: column; gap: 6px; }
+/* Buttons. Default = outline (surface fill, blue border and text). .primary = red, .secondary = blue,
+   both with a 4 px "lip" that flattens when pressed. .subtle = quiet. Disabled is a dashed grey slab
+   (no opacity: the label stays readable). Hover only where there is a real pointer (no sticky iPad hover). */
+button, input[type='text'], input:not([type]) { font: inherit; min-height: 48px; padding: 8px 16px; border-radius: var(--radius); border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+button { cursor: pointer; border-color: var(--cta-secondary); color: var(--cta-secondary); font-weight: 700; }
+input::placeholder { color: var(--ink-muted); }
+button.primary, button.danger { background: var(--cta-primary); border-color: var(--cta-primary); color: var(--on-cta); box-shadow: 0 4px 0 var(--cta-primary-edge); }
+button.secondary { background: var(--cta-secondary); border-color: var(--cta-secondary); color: var(--on-cta); box-shadow: 0 4px 0 var(--cta-secondary-edge); }
+@media (hover: hover) {
+  button:enabled:hover { background: var(--cta-outline-hover); }
+  button.primary:enabled:hover, button.danger:enabled:hover { background: var(--cta-primary-hover); border-color: var(--cta-primary-hover); }
+  button.secondary:enabled:hover { background: var(--cta-secondary-hover); border-color: var(--cta-secondary-hover); }
+}
+button:enabled:active { background: var(--cta-outline-pressed); }
+button.primary:enabled:active, button.danger:enabled:active { background: var(--cta-primary-pressed); border-color: var(--cta-primary-pressed); box-shadow: 0 1px 0 var(--cta-primary-edge); transform: translateY(3px); }
+button.secondary:enabled:active { background: var(--cta-secondary-pressed); border-color: var(--cta-secondary-pressed); box-shadow: 0 1px 0 var(--cta-secondary-edge); transform: translateY(3px); }
+button:disabled { background: var(--disabled-bg); color: var(--disabled-ink); border: 2px dashed var(--disabled-border); box-shadow: none; transform: none; cursor: not-allowed; }
+/* Focus: a light inner ring and a blue outer ring, on top of the lip for filled buttons. */
+button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+button.primary:focus-visible, button.danger:focus-visible { box-shadow: 0 4px 0 var(--cta-primary-edge), var(--focus-ring); }
+button.secondary:focus-visible { box-shadow: 0 4px 0 var(--cta-secondary-edge), var(--focus-ring); }
+button:disabled:focus-visible { box-shadow: var(--focus-ring); }
+input[type='radio'] { accent-color: var(--cta-secondary); }
+input[type='radio']:focus-visible { box-shadow: none; outline: 3px solid var(--focus); outline-offset: 2px; }
+label { display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-weight: 600; }
 form { display: flex; flex-direction: column; gap: 12px; }
 /* Join form: the two ways to play, as cards (each a labelled radio). */
 .mode-cards { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.mode-cards legend { padding: 0; margin-bottom: 6px; }
-.mode-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid #bbb; border-radius: 12px; cursor: pointer; }
-.mode-card.selected { border-color: #222; }
+.mode-cards legend { padding: 0; margin-bottom: 6px; color: var(--ink-2); font-weight: 600; }
+.mode-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-weight: 400; cursor: pointer; }
+.mode-card.selected { border-color: var(--cta-secondary); box-shadow: inset 0 0 0 1px var(--cta-secondary); }
 .mode-card input { width: 24px; height: 24px; margin: 3px 0 0; flex: none; }
 .mode-text { display: flex; flex-direction: column; gap: 4px; }
 .mode-title { font-weight: 700; }
-.mode-line { font-size: 16px; line-height: 1.4; color: #555; }
+.mode-line { font-size: 16px; line-height: 1.4; color: var(--ink-2); }
 /* Home and not-found: the room-code field. 16 px or more so iOS does not zoom on focus; the longest code (SNOWDROP-8888) fits a 360 px phone. */
 .intro { margin: 0; line-height: 1.45; }
 .code-form { gap: 8px; }
@@ -125,11 +145,15 @@ button.suggestion { align-self: flex-start; font-weight: 700; }
 .household-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 /* Quiet secondary actions (Remove, Leave room). Still 48 px tall for fingers. */
-button.subtle { font-size: 16px; min-width: 48px; padding: 4px 12px; border-color: #bbb; color: #555; background: transparent; }
-button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-width: 64px; }
+button.subtle { font-size: 16px; font-weight: 600; min-width: 48px; padding: 4px 12px; border-color: var(--line); color: var(--ink-2); background: transparent; }
+@media (hover: hover) { button.subtle:enabled:hover { border-color: var(--line-strong); color: var(--ink); background: transparent; } }
+button.subtle:enabled:active { border-color: var(--line-strong); color: var(--ink); background: var(--cta-outline-pressed); }
+button.danger { min-width: 64px; }
 .confirm-tap { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 16px; }
 .confirm-tap button { font-size: 16px; padding: 4px 14px; }
-.leave-room button.subtle { border-color: transparent; text-decoration: underline; padding-left: 0; }
+.leave-room button.subtle { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; padding-left: 0; }
+.leave-room button.subtle:enabled:active { background: transparent; }
+.confirm-tap > span { color: var(--ink); }
 .board-wrap { width: min(100%, 100vh); aspect-ratio: 1; margin: 0 auto; container-type: size; }
 .board { width: 100%; height: 100%; aspect-ratio: 1; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 3%; }
 .tile { display: flex; align-items: center; justify-content: center; background: #fff; border: 3px solid #222; border-radius: 12%; font-weight: 800; font-size: 14cqmin; line-height: 1; }

@@ -49,7 +49,7 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
         Ready? {me?.ready ? '✅' : '⏳'}
       </button>
       {canForce && (
-        <button type="button" onClick={() => (unlockAudio(), run(() => actions.startAnyway()))}>
+        <button type="button" className="secondary" onClick={() => (unlockAudio(), run(() => actions.startAnyway()))}>
           Start anyway
         </button>
       )}

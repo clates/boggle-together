@@ -103,7 +103,7 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
                 Ready? {controls.ready ? '✅' : '⏳'}
               </button>
               {controls.canForce && (
-                <button type="button" onClick={controls.onStartAnyway}>
+                <button type="button" className="secondary" onClick={controls.onStartAnyway}>
                   Start anyway
                 </button>
               )}
