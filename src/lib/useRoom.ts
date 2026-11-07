@@ -19,7 +19,16 @@ export type Participant = {
   name: string
   ready: boolean
   pens_down: boolean
+  joined_at?: string
   [key: string]: unknown
+}
+
+// Stable display order: join time, then id (rows come back from the DB in arbitrary order).
+function byJoin(a: Participant, b: Participant): number {
+  const ta = a.joined_at ? Date.parse(a.joined_at) : 0
+  const tb = b.joined_at ? Date.parse(b.joined_at) : 0
+  if (ta !== tb) return ta - tb
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }
 
 export type RoomStatus = 'loading' | 'not-found' | 'needs-join' | 'ready'
@@ -85,7 +94,7 @@ export function useRoom(code: string, client: Client = supabase) {
       }
       const p = await client.from('participants').select('*').eq('room_code', code)
       if (p.error) throw new Error(p.error.message)
-      return { kind: 'present', uid: id, room: r.data as RoomRow, participants: (p.data ?? []) as Participant[] }
+      return { kind: 'present', uid: id, room: r.data as RoomRow, participants: ([...(p.data ?? [])] as Participant[]).sort(byJoin) }
     }
 
     const run = async (): Promise<void> => {

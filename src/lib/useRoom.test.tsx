@@ -347,6 +347,28 @@ describe('useRoom', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('returns participants sorted by joined_at then id, stable across reloads of shuffled rows', async () => {
+    const f = makeFake()
+    member(f)
+    f.db.participants = [
+      { room_code: 'OAK-01', id: 'u3', kind: 'typist', name: 'C', ready: false, pens_down: false, joined_at: '2026-01-01T11:00:02Z' },
+      { room_code: 'OAK-01', id: 'u1', kind: 'household', name: 'A', ready: false, pens_down: false, joined_at: '2026-01-01T11:00:00Z' },
+      { room_code: 'OAK-01', id: 'u2b', kind: 'household', name: 'B2', ready: false, pens_down: false, joined_at: '2026-01-01T11:00:01Z' },
+      { room_code: 'OAK-01', id: 'u2a', kind: 'household', name: 'B1', ready: false, pens_down: false, joined_at: '2026-01-01T11:00:01Z' },
+    ]
+    const { result } = renderHook(() => useRoom('OAK-01', f.client))
+    await flush()
+    const expected = ['u1', 'u2a', 'u2b', 'u3']
+    expect(result.current.participants.map((p) => p.id)).toEqual(expected)
+    f.db.participants.reverse()
+    await act(async () => { f.db.handlers.forEach((cb) => cb()) })
+    await flush()
+    expect(result.current.participants.map((p) => p.id)).toEqual(expected)
+    f.db.participants.push(f.db.participants.shift()!)
+    await advance(5100)
+    expect(result.current.participants.map((p) => p.id)).toEqual(expected)
+  })
+
   it('keeps setup retry alive when run fails first and setup fails later (no shared timer)', async () => {
     const f = makeFake()
     member(f)
