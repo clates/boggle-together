@@ -54,9 +54,17 @@ async function joinAs(p: Player, code: string, kind: 'household' | 'typist') {
   await joinForm(p, kind)
 }
 
+/** Joins the way a code is passed on a call: typed on the home screen as heard ("pecan 2654"). */
+async function joinByVoice(p: Player, code: string, kind: 'household' | 'typist') {
+  await p.page.goto('/')
+  await p.page.getByLabel(/room code/i).pressSequentially(code.toLowerCase().replace('-', ' '))
+  await p.page.waitForURL(new RegExp(`/r/${code}$`)) // no Enter, no extra step
+  await joinForm(p, kind)
+}
+
 async function joinForm(p: Player, kind: 'household' | 'typist') {
   await p.page.getByLabel(/Your name/).fill(p.name)
-  if (kind === 'typist') await p.page.getByLabel('Type my words').check()
+  if (kind === 'typist') await p.page.getByRole('radio', { name: 'Type on my phone' }).check()
   await p.page.getByRole('button', { name: 'Join' }).click()
   if (kind === 'typist') await expect(p.page.getByRole('heading', { name: 'Waiting for the game to start' })).toBeVisible()
   else await expect(readyButton(p)).toBeVisible()
@@ -65,9 +73,9 @@ async function joinForm(p: Player, kind: 'household' | 'typist') {
 async function createRoom(p: Player): Promise<string> {
   await p.page.goto('/')
   await p.page.getByRole('button', { name: 'Start a room' }).click()
-  await p.page.waitForURL(/\/r\/[A-Z0-9-]+$/)
+  await p.page.waitForURL(/\/r\/[A-Z]+-\d{4}$/)
   const code = new URL(p.page.url()).pathname.split('/').pop()!
-  expect(code).toMatch(/^[A-Z0-9-]+$/)
+  expect(code).toMatch(/^[A-Z]+-\d{4}$/)
   await joinForm(p, 'household')
   return code
 }
@@ -103,7 +111,7 @@ async function pensDownAll(households: Player[], everyone: Player[]) {
 }
 
 function roomRound(code: string): number {
-  expect(code).toMatch(/^[A-Z0-9-]+$/)
+  expect(code).toMatch(/^[A-Z]+-\d{4}$/)
   return Number(psql(`select round from rooms where code = '${code}'`))
 }
 
@@ -129,11 +137,11 @@ test('full game', async ({ browser }) => {
   const everyone = [...households, ...typists]
 
   const code = await createRoom(lates)
-  await joinAs(grandma, code, 'household')
+  await joinByVoice(grandma, code, 'household')
   await joinAs(chris, code, 'typist')
-  await joinAs(jo, code, 'typist')
+  await joinByVoice(jo, code, 'typist')
   await expect(lates.page.locator('.household-list li')).toHaveText([/Lates/, /Grandma/])
-  await expect(lates.page.getByText('2 typing their words')).toBeVisible()
+  await expect(lates.page.getByText('2 people typing on phones')).toBeVisible()
 
   // Round 1
   for (const p of households) await readyButton(p).click()
@@ -266,4 +274,24 @@ test('two households tap Ready at the same instant', async ({ browser }) => {
   expect(roomRound(code)).toBe(1)
   await pensDownAll([lates, grandma], [lates, grandma])
   expect(roomRound(code)).toBe(1)
+})
+
+test('a misheard code is fixed in place on the not-found page', async ({ browser }) => {
+  const [lates, grandma] = await add(newPlayer(browser, 'Lates', DESKTOP), newPlayer(browser, 'Grandma', PHONE))
+  const code = await createRoom(lates)
+  const [word, digits] = code.split('-')
+  const wrong = `${word}-${digits.slice(0, 3)}${(Number(digits[3]) + 1) % 10}`
+  expect(psql(`select count(*) from rooms where code = '${wrong}'`)).toBe('0')
+
+  await grandma.page.goto('/')
+  await grandma.page.getByLabel(/room code/i).pressSequentially(wrong.toLowerCase().replace('-', ', '))
+  await expect(grandma.page.getByRole('heading', { name: `No room with the code ${wrong}` })).toBeVisible()
+  const field = grandma.page.getByLabel(/room code/i)
+  await expect(field).toHaveValue(wrong)
+  await field.press('End')
+  await field.press('Backspace')
+  await field.pressSequentially(digits[3])
+  await grandma.page.waitForURL(new RegExp(`/r/${code}$`))
+  await joinForm(grandma, 'household')
+  await expect(lates.page.locator('.household-list li')).toHaveText([/Lates/, /Grandma/])
 })
