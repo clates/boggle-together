@@ -4,13 +4,17 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Participant } from '../lib/useRoom'
 
-const hook = vi.hoisted(() => ({ value: {} as any, code: '' }))
-vi.mock('../lib/useRoom', () => ({
-  useRoom: (code: string) => {
-    hook.code = code
-    return hook.value
-  },
-}))
+const hook = vi.hoisted(() => ({ value: {} as any, code: '', mounts: 0 }))
+vi.mock('../lib/useRoom', async () => {
+  const { useState } = await import('react')
+  return {
+    useRoom: (code: string) => {
+      useState(() => hook.mounts++) // counts fresh lookups (mounts), not re-renders
+      hook.code = code
+      return hook.value
+    },
+  }
+})
 vi.mock('../lib/useRoundWords', () => ({ useRoundWords: () => ({ status: 'loading', byParticipant: {}, retry: () => {} }) }))
 
 import { resetAudio } from '../lib/audio'
@@ -84,14 +88,28 @@ describe('Room', () => {
 
   it('not found: a near miss offers the right word', async () => {
     setHook({ status: 'not-found' })
-    renderRoom('/r/PECAN-2655')
-    const input = screen.getByLabelText(/room code/i) as HTMLInputElement
-    input.focus()
-    input.setSelectionRange(5, 5) // PECAN|-2655
-    await userEvent.keyboard('{Backspace}{Backspace}KN') // PECKN
-    expect(hook.code).toBe('PECAN-2655')
+    renderRoom('/r/PECKAN-2654')
+    expect(hook.code).toBe('PECKAN-2654')
     await userEvent.click(screen.getByRole('button', { name: 'Did you mean PECAN?' }))
-    expect(hook.code).toBe('PECAN-2655')
+    expect(hook.code).toBe('PECAN-2654')
+    expect(screen.getByRole('heading')).toHaveTextContent('No room with the code PECAN-2654')
+  })
+
+  it('not found: retrying the same code looks it up again', async () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/PECAN-2654')
+    const before = hook.mounts
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Enter}')
+    expect(hook.code).toBe('PECAN-2654')
+    expect(hook.mounts).toBe(before + 1)
+    await userEvent.type(screen.getByLabelText(/room code/i), '{Enter}')
+    expect(hook.mounts).toBe(before + 2)
+  })
+
+  it('a double-encoded link is decoded before reading the code', () => {
+    setHook({ status: 'not-found' })
+    renderRoom('/r/pecan%25202654')
+    expect(hook.code).toBe('PECAN-2654')
   })
 
   it('a link with a spoken-style code still finds the room', () => {

@@ -57,12 +57,19 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
   )
 }
 
+// A retry of the same code (from the not-found page) must look it up again: each retry bumps a
+// counter in the location state, which remounts the room and so reruns the lookup.
 export default function Room() {
+  const retry = (useLocation().state as { retry?: number } | null)?.retry ?? 0
+  return <RoomView key={retry} />
+}
+
+function RoomView() {
   // codes are stored uppercase; a link typed or lowercased by a chat app (or /r/pecan 2654) must still work
   const param = (useParams().code ?? '').trim().toUpperCase()
   const spoken = normalizeCode(param)
   const code = isComplete(spoken) ? spoken : param
-  const location = useLocation()
+  const retry = (useLocation().state as { retry?: number } | null)?.retry ?? 0
   const room = useRoom(code)
   const { status, me, phase } = room
   const navigate = useNavigate()
@@ -83,8 +90,8 @@ export default function Room() {
           key={code}
           label="Room code"
           initial={code}
-          autoFocus={!!(location.state as { retry?: boolean } | null)?.retry}
-          onGo={(c) => navigate(`/r/${c}`, { replace: true, state: { retry: true } })}
+          autoFocus={retry > 0}
+          onGo={(c) => navigate(`/r/${c}`, { replace: true, state: { retry: retry + 1 } })}
         />
         <Link to="/">Back to home</Link>
       </main>

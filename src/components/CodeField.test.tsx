@@ -135,6 +135,34 @@ describe('CodeField while editing a complete code', () => {
     expect(screen.getByRole('button', { name: 'Did you mean PECAN?' })).toBeInTheDocument()
   })
 
+  it('typing a digit into the middle of a complete code does not jump; Enter does', async () => {
+    const onGo = vi.fn()
+    render(<CodeField label="Room code" initial="PECAN-2655" onGo={onGo} />)
+    const input = screen.getByLabelText('Room code') as HTMLInputElement
+    input.focus()
+    input.setSelectionRange(8, 8) // PECAN-26|55
+    await userEvent.keyboard('7')
+    expect(input).toHaveValue('PECAN-2675')
+    expect(onGo).not.toHaveBeenCalled()
+    await userEvent.keyboard('{Enter}')
+    expect(onGo).toHaveBeenCalledExactlyOnceWith('PECAN-2675')
+  })
+
+  it('fixing the last digit of a complete code (delete, retype at the end) jumps', async () => {
+    const onGo = vi.fn()
+    render(<CodeField label="Room code" initial="PECAN-2655" onGo={onGo} />)
+    await userEvent.type(screen.getByLabelText('Room code'), '{Backspace}4')
+    expect(onGo).toHaveBeenCalledExactlyOnceWith('PECAN-2654')
+  })
+
+  it('an extra digit at the end of a complete code changes nothing and does not jump', async () => {
+    const onGo = vi.fn()
+    render(<CodeField label="Room code" initial="PECAN-2655" onGo={onGo} />)
+    await userEvent.type(screen.getByLabelText('Room code'), '7')
+    expect(screen.getByLabelText('Room code')).toHaveValue('PECAN-2655')
+    expect(onGo).not.toHaveBeenCalled()
+  })
+
   it('Enter goes with a complete code (taking the suggestion if there is one)', async () => {
     const onGo = vi.fn()
     render(<CodeField label="Room code" initial="PEKAN-2655" onGo={onGo} />)
