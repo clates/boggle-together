@@ -26,11 +26,25 @@ function renderHome() {
 beforeEach(() => rpc.mockReset())
 
 describe('Home', () => {
-  it('joins with trimmed, uppercased code', async () => {
+  it('jumps straight into the room once a spoken code is typed', async () => {
     renderHome()
-    await userEvent.type(screen.getByLabelText(/room code/i), '  maple-42 ')
-    await userEvent.click(screen.getByRole('button', { name: 'Join a room' }))
-    expect(screen.getByText('ROOM PAGE MAPLE-42')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText(/room code/i), 'pecan 2654')
+    expect(screen.getByText('ROOM PAGE PECAN-2654')).toBeInTheDocument()
+  })
+
+  it('stays on the home screen with a partial code', async () => {
+    renderHome()
+    await userEvent.type(screen.getByLabelText(/room code/i), 'pecan 265{enter}')
+    expect(screen.queryByText(/ROOM PAGE/)).toBeNull()
+    expect(screen.getByText(/a word and four numbers/i)).toBeInTheDocument()
+  })
+
+  it('explains the app in a sentence or two near Start a room', () => {
+    renderHome()
+    const intro = screen.getByTestId('home-intro')
+    expect(intro).toHaveTextContent(/paper/i)
+    expect(intro).toHaveTextContent(/voice or video call/i)
+    expect(intro.textContent!.trim().split(/\s+/).length).toBeLessThanOrEqual(35)
   })
 
   it('Start a room creates and navigates', async () => {
