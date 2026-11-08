@@ -68,7 +68,7 @@ function type(text: string) {
 describe('Typist', () => {
   it('normalizes, submits and lists a word', () => {
     const room = makeRoom()
-    render(<Typist room={room} />)
+    render(<Typist code="ABCD" room={room} />)
     type(' Train ')
     expect(room.actions.submitWord).toHaveBeenCalledWith('TRAIN')
     expect(screen.getByText('TRAIN')).toBeTruthy()
@@ -78,7 +78,7 @@ describe('Typist', () => {
 
   it('does not send invalid words and shows a hint, keeping the text', () => {
     const room = makeRoom()
-    render(<Typist room={room} />)
+    render(<Typist code="ABCD" room={room} />)
     type('ab')
     expect(room.actions.submitWord).not.toHaveBeenCalled()
     expect(screen.getByText('3 letters or more, A to Z only')).toBeTruthy()
@@ -89,7 +89,7 @@ describe('Typist', () => {
 
   it('shows a duplicate once and does not re-send', () => {
     const room = makeRoom()
-    render(<Typist room={room} />)
+    render(<Typist code="ABCD" room={room} />)
     type('train')
     type('TRAIN')
     expect(screen.getAllByText('TRAIN')).toHaveLength(1)
@@ -97,7 +97,7 @@ describe('Typist', () => {
   })
 
   it('lists newest first with a count', () => {
-    render(<Typist room={makeRoom()} />)
+    render(<Typist code="ABCD" room={makeRoom()} />)
     type('cat')
     type('dog')
     const items = screen.getAllByRole('listitem').map((l) => l.textContent)
@@ -107,7 +107,7 @@ describe('Typist', () => {
 
   it('shows Too late on rejection, keeps earlier words, and removes the rejected one', async () => {
     const submitWord = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(rejected('Too late'))
-    render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+    render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
     type('cat')
     type('dog')
     expect(await screen.findByText('Too late')).toBeTruthy()
@@ -119,7 +119,7 @@ describe('Typist', () => {
 
   it('shows other server messages as given', async () => {
     const submitWord = vi.fn().mockRejectedValue(rejected('Invalid word'))
-    render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+    render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
     type('cat')
     expect(await screen.findByText('Invalid word')).toBeTruthy()
     expect(screen.queryByText('CAT')).toBeNull()
@@ -127,13 +127,13 @@ describe('Typist', () => {
 
   it('shows Word limit reached', async () => {
     const submitWord = vi.fn().mockRejectedValue(rejected('Word limit reached'))
-    render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+    render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
     type('cat')
     expect(await screen.findByText('Word limit reached')).toBeTruthy()
   })
 
   it('playing: shows the board (same letters), the draining fill, and no clock', () => {
-    const { container } = render(<Typist room={makeRoom({ now: T0 + ROUND_MS / 2 })} />)
+    const { container } = render(<Typist code="ABCD" room={makeRoom({ now: T0 + ROUND_MS / 2 })} />)
     expect(screen.getByTestId('board')).toBeTruthy()
     expect(tileTexts()).toEqual(LETTERS)
     const fill = screen.getByTestId('fill')
@@ -146,23 +146,23 @@ describe('Typist', () => {
   })
 
   it('playing: the fill follows the clock (full at the start, nearly gone at the end)', () => {
-    const { rerender } = render(<Typist room={makeRoom({ now: T0 })} />)
+    const { rerender } = render(<Typist code="ABCD" room={makeRoom({ now: T0 })} />)
     expect(screen.getByTestId('fill').style.height).toBe('100%')
-    rerender(<Typist room={makeRoom({ now: T0 + ROUND_MS * 0.9 })} />)
+    rerender(<Typist code="ABCD" room={makeRoom({ now: T0 + ROUND_MS * 0.9 })} />)
     expect(parseFloat(screen.getByTestId('fill').style.height)).toBeCloseTo(10, 5)
     expect(fillColor(screen.getByTestId('fill'))).toBe(css('#d74a21'))
     expect(screen.getByTestId('fill')).toHaveClass('fill-low')
   })
 
   it('playing before the board arrives shows a blank square, not letters', () => {
-    render(<Typist room={makeRoom({ board: null })} />)
+    render(<Typist code="ABCD" room={makeRoom({ board: null })} />)
     expect(screen.queryByTestId('board')).toBeNull()
     expect(screen.getByLabelText('Loading board')).toBeTruthy()
     expect(screen.getByRole('textbox')).toBeTruthy()
   })
 
   it('countdown: whole-second number and pens line, no board, no fill, no input', () => {
-    render(<Typist room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
+    render(<Typist code="ABCD" room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
     expect(screen.getByTestId('countdown')).toHaveTextContent(/^3$/)
     expect(screen.getByText('Get ready to type')).toBeTruthy()
     expect(screen.queryByText(/pens/i)).toBeNull()
@@ -174,21 +174,21 @@ describe('Typist', () => {
 
   it('keeps a main landmark in every in-round phase', () => {
     for (const [phase, now] of [['countdown', T0 - 2500], ['playing', T0 + 1000], ['locked', T0 + ROUND_MS + 500]] as const) {
-      const r = render(<Typist room={makeRoom({ phase, now })} />)
+      const r = render(<Typist code="ABCD" room={makeRoom({ phase, now })} />)
       expect(screen.getByRole('main')).toHaveAttribute('data-testid', 'typist')
       r.unmount()
     }
   })
 
   it('locked: board stays, fill is gone, no clock', () => {
-    const { container } = render(<Typist room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
+    const { container } = render(<Typist code="ABCD" room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
     expect(tileTexts()).toEqual(LETTERS)
     expect(screen.queryByTestId('fill')).toBeNull()
     expect(container.textContent).not.toMatch(/\d+:\d\d/)
   })
 
   it('Rotate board turns the board a quarter turn each tap', () => {
-    render(<Typist room={makeRoom()} />)
+    render(<Typist code="ABCD" room={makeRoom()} />)
     const wrap = () => (screen.getByTestId('board').parentElement as HTMLElement).style.transform
     expect(wrap()).toBe('rotate(0deg)')
     const btn = screen.getByRole('button', { name: /rotate board/i })
@@ -201,18 +201,18 @@ describe('Typist', () => {
   })
 
   it('never creates an audio context (typists stay silent)', () => {
-    const { rerender } = render(<Typist room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
-    rerender(<Typist room={makeRoom({ now: T0 + 1000 })} />)
+    const { rerender } = render(<Typist code="ABCD" room={makeRoom({ phase: 'countdown', now: T0 - 2500 })} />)
+    rerender(<Typist code="ABCD" room={makeRoom({ now: T0 + 1000 })} />)
     type('cat')
-    rerender(<Typist room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
+    rerender(<Typist code="ABCD" room={makeRoom({ phase: 'locked', now: T0 + ROUND_MS + 500 })} />)
     expect(AudioCtor).not.toHaveBeenCalled()
   })
 
   it('locked still shows the list and still accepts an attempt', async () => {
     const submitWord = vi.fn().mockRejectedValue(rejected('Too late'))
-    const { rerender } = render(<Typist room={makeRoom()} />)
+    const { rerender } = render(<Typist code="ABCD" room={makeRoom()} />)
     type('cat')
-    rerender(<Typist room={makeRoom({ phase: 'locked', actions: { submitWord } })} />)
+    rerender(<Typist code="ABCD" room={makeRoom({ phase: 'locked', actions: { submitWord } })} />)
     expect(screen.getByText("Time's up!")).toBeTruthy()
     expect(screen.getByText('CAT')).toBeTruthy()
     type('dog')
@@ -222,14 +222,14 @@ describe('Typist', () => {
   })
 
   it('focuses the input when playing starts', () => {
-    const { rerender } = render(<Typist room={makeRoom({ phase: 'countdown' })} />)
-    rerender(<Typist room={makeRoom()} />)
+    const { rerender } = render(<Typist code="ABCD" room={makeRoom({ phase: 'countdown' })} />)
+    rerender(<Typist code="ABCD" room={makeRoom()} />)
     expect(document.activeElement).toBe(screen.getByRole('textbox'))
   })
 
   it('seeds the list from earlier words without duplicates', async () => {
     const loadOwnWords = vi.fn().mockResolvedValue(['CAT', 'DOG'])
-    render(<Typist room={makeRoom()} loadOwnWords={loadOwnWords} />)
+    render(<Typist code="ABCD" room={makeRoom()} loadOwnWords={loadOwnWords} />)
     type('dog')
     expect(await screen.findByText('CAT')).toBeTruthy()
     expect(screen.getAllByText('DOG')).toHaveLength(1)
@@ -242,7 +242,7 @@ describe('Typist', () => {
 
     it('keeps the word marked sending... while it retries, then clears the mark', async () => {
       const submitWord = vi.fn().mockRejectedValueOnce(offline()).mockRejectedValueOnce(offline()).mockResolvedValueOnce(undefined)
-      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
       type('cat')
       await act(() => vi.advanceTimersByTimeAsync(0))
       expect(screen.getByRole('listitem')).toHaveTextContent('CAT sending...')
@@ -258,7 +258,7 @@ describe('Typist', () => {
 
     it('removes the word after 3 failed retries with a connection message', async () => {
       const submitWord = vi.fn().mockRejectedValue(offline())
-      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
       type('cat')
       await act(() => vi.advanceTimersByTimeAsync(3499))
       expect(screen.getByText(/CAT/)).toBeTruthy()
@@ -270,7 +270,7 @@ describe('Typist', () => {
 
     it('a server rejection during retries removes the word at once with its message', async () => {
       const submitWord = vi.fn().mockRejectedValueOnce(offline()).mockRejectedValueOnce(rejected('Too late'))
-      render(<Typist room={makeRoom({ actions: { submitWord } })} />)
+      render(<Typist code="ABCD" room={makeRoom({ actions: { submitWord } })} />)
       type('cat')
       await act(() => vi.advanceTimersByTimeAsync(500))
       expect(submitWord).toHaveBeenCalledTimes(2)

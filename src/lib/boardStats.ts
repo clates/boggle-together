@@ -62,6 +62,19 @@ export function canTrace(board: readonly string[], word: string): boolean {
   return tiles.some((_, cell) => walk(cell, 0))
 }
 
+/** The tiles a traceable word is made of. Only multi-letter tiles (Qu) can make this ambiguous, and Q exists nowhere else. */
+function tilesOf(word: string, tiles: readonly string[]): string[] {
+  const multi = tiles.filter((t) => t.length > 1)
+  const out: string[] = []
+  for (let i = 0; i < word.length; ) {
+    const long = multi.find((t) => word.startsWith(t, i))
+    const tile = long ?? word[i]
+    out.push(tile)
+    i += tile.length
+  }
+  return out
+}
+
 /** Stats for the round, or null when nobody typed a word that can be found on the board. */
 export function boardStats(board: readonly string[], typed: readonly string[]): BoardStats | null {
   const valid = [...new Set(typed.map((w) => w.toUpperCase()))].filter((w) => w.length >= MIN_LENGTH && canTrace(board, w)).sort()
@@ -75,12 +88,12 @@ export function boardStats(board: readonly string[], typed: readonly string[]): 
     if (points > exotic.points || (points === exotic.points && w.length > exotic.word.length)) exotic = { word: w, points }
   }
 
-  // words that use a tile: a tile counts once per word however often it appears in it
+  // Words that use a tile, each word counted once per tile. A word is read as the tiles it is made of:
+  // the Qu tile swallows its own U, so QUIT uses Qu, I and T but never a separate U tile.
   const tiles = [...new Set(board.map((t) => t.toUpperCase()))].sort()
+  const uses = new Map<string, number>(tiles.map((t) => [t, 0]))
+  for (const w of valid) for (const tile of new Set(tilesOf(w, tiles))) uses.set(tile, (uses.get(tile) ?? 0) + 1)
   let busiest = { tile: tiles[0], words: -1 }
-  for (const tile of tiles) {
-    const words = valid.filter((w) => w.includes(tile)).length
-    if (words > busiest.words) busiest = { tile, words }
-  }
+  for (const tile of tiles) if ((uses.get(tile) ?? 0) > busiest.words) busiest = { tile, words: uses.get(tile) ?? 0 }
   return { wordCount: valid.length, longest, busiestTile: busiest, exotic }
 }
