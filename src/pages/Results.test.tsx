@@ -5,6 +5,13 @@ import { fakeWordsClient, type Row } from '../lib/fakeWordsClient'
 import type { Participant } from '../lib/useRoom'
 import Results, { type ResultsRoom } from './Results'
 
+// The real word list is 1.7 MB: these tests use a small stand-in. On the board below, TERS, ROIS and
+// the two 5-letter words can be traced; ZZZZ and TEARS cannot.
+const listMode = vi.hoisted(() => ({ fail: false }))
+vi.mock('../lib/wordList', () => ({
+  loadWordList: () => (listMode.fail ? Promise.reject(new Error('offline')) : Promise.resolve(['ters', 'rois', 'terso', 'noisr', 'zzzz', 'tears', 'at'])),
+}))
+
 const LETTERS = 'TERSANOILDPMUCHE'.split('')
 
 const person = (id: string, kind: Participant['kind'], name: string, extra: Partial<Participant> = {}): Participant => ({
@@ -175,28 +182,24 @@ describe('Results', () => {
     expect(screen.queryByRole('button', { name: 'Start anyway' })).toBeNull()
   })
 
-  it('shows a stats ribbon from the words that can be found on the board', async () => {
+  it('shows what is hiding on the board, whatever anyone typed', async () => {
     // board: T E R S / A N O I / L D P M / U C H E
-    const rows: Row[] = [
-      { participant_id: 't4', word: 'TEARS' }, // not on the board: R and A are not neighbours
-      { participant_id: 't4', word: 'TERS' },
-      { participant_id: 't4', word: 'ZZZZZZZZ' }, // longest, but not on the board
-      { participant_id: 't3', word: 'TERS' },
-      { participant_id: 't3', word: 'NOSE' }, // not on the board: S does not touch E
-      { participant_id: 't3', word: 'ROIS' },
-    ]
-    setup({}, rows)
+    setup({}, [{ participant_id: 't4', word: 'ZZZZ' }]) // nobody typed a real word
     const ribbon = await screen.findByTestId('stats-ribbon')
-    expect(within(ribbon).getByText('Longest word').nextElementSibling).toHaveTextContent('ROIS') // 4 letters, first alphabetically
-    expect(within(ribbon).getByText('Busiest tile').nextElementSibling).toHaveTextContent(/R.*in 2 words/)
-    expect(within(ribbon).getByText('Most exotic').nextElementSibling).toHaveTextContent('ROIS')
-    expect(ribbon).not.toHaveTextContent('ZZZZZZZZ')
+    expect(within(ribbon).getByText('Longest word hiding here').nextElementSibling).toHaveTextContent('NOISR') // first alphabetically of the two 5-letter words
+    expect(within(ribbon).getByText('Longest word hiding here').nextElementSibling).toHaveTextContent('5 letters, 1 other this long')
+    expect(within(ribbon).getByText('Most exotic').nextElementSibling).toHaveTextContent('NOISR')
+    expect(within(ribbon).getByText('Words on this board').nextElementSibling).toHaveTextContent('4')
+    expect(ribbon).not.toHaveTextContent('ZZZZ')
   })
 
-  it('has no stats ribbon when no typed word is on the board', async () => {
-    setup({}, [{ participant_id: 't4', word: 'ZZZZ' }])
+  it('has no stats ribbon while the word list has not loaded or when it cannot', async () => {
+    listMode.fail = true
+    setup()
     await columns()
+    await new Promise((r) => setTimeout(r, 20))
     expect(screen.queryByTestId('stats-ribbon')).toBeNull()
+    listMode.fail = false
   })
 
   it('shows a friendly line when nobody typed', async () => {
