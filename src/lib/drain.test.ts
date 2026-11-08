@@ -45,6 +45,12 @@ describe('drainEdge', () => {
       expect(lum(drainEdge(p))).toBeLessThan(lum(drainColor(p)) / 3)
     }
   })
+  it('hits exact waterline colours at the keyframes', () => {
+    expect(drainEdge(1)).toBe('#006c4e')
+    expect(drainEdge(0.5)).toBe('#907401')
+    expect(drainEdge(0.15)).toBe('#571000')
+    expect(drainEdge(0)).toBe('#571000')
+  })
   it('clamps like the fill', () => {
     expect(drainEdge(NaN)).toBe(drainEdge(0))
     expect(drainEdge(5)).toBe(drainEdge(1))
