@@ -7,7 +7,8 @@ import { unlockAudio } from '../lib/audio'
 import type { Client } from '../lib/supabase'
 import type { Participant, useRoom } from '../lib/useRoom'
 import { useRoundWords, type RoundWordsStatus } from '../lib/useRoundWords'
-import { boardStats, type BoardStats } from '../lib/boardStats'
+import type { BoardStats } from '../lib/boardStats'
+import { useBoardStats } from '../lib/useBoardStats'
 import { markShared } from '../lib/words'
 
 // The slice of the room hook this screen needs (the hook's return satisfies it).
@@ -28,6 +29,8 @@ export type ResultsControls = {
 export type ResultsViewProps = {
   code: string
   board: string[] | null
+  /** facts about the board, once worked out (null until then) */
+  stats: BoardStats | null
   participants: Participant[]
   columns: ResultsColumn[]
   wordsStatus: RoundWordsStatus
@@ -44,10 +47,12 @@ const LARGE_UP_TO = 4
 
 // A thin strip of round facts above the word lists.
 function StatsRibbon({ stats }: { stats: BoardStats }) {
+  const others = stats.longestOthers
   const items: [string, string, string][] = [
-    ['Longest word', stats.longest, `${stats.longest.length} letters`],
-    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `in ${stats.busiestTile.words} ${stats.busiestTile.words === 1 ? 'word' : 'words'}`],
+    ['Longest word hiding here', stats.longest, `${stats.longest.length} letters${others > 0 ? `, ${others === 1 ? '1 other' : `${others} others`} this long` : ''}`],
     ['Most exotic', stats.exotic.word, `${stats.exotic.points} points in Scrabble`],
+    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `in ${stats.busiestTile.words} words`],
+    ['Words on this board', String(stats.wordCount), 'in all'],
   ]
   return (
     <dl className="stats-ribbon" data-testid="stats-ribbon">
@@ -85,7 +90,7 @@ function WordColumns({ columns }: { columns: ResultsColumn[] }) {
   )
 }
 
-export function ResultsView({ code, board, participants, columns, wordsStatus, onRetry, controls, meId, onRemove, onLeave }: ResultsViewProps) {
+export function ResultsView({ code, board, stats, participants, columns, wordsStatus, onRetry, controls, meId, onRemove, onLeave }: ResultsViewProps) {
   let words
   if (wordsStatus === 'error')
     words = (
@@ -109,11 +114,6 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
       </div>
     )
   else words = <WordColumns columns={columns} />
-
-  const stats = useMemo(
-    () => (board && wordsStatus === 'ready' ? boardStats(board, columns.flatMap((c) => c.words.map((w) => w.word))) : null),
-    [board, wordsStatus, columns],
-  )
 
   return (
     <div className="results" data-testid="results">
@@ -170,6 +170,7 @@ export default function Results({
 }) {
   const { participants, me, board, actions } = room
   const round = room.room?.round ?? null
+  const stats = useBoardStats(board)
   const words = useRoundWords(code, round, round !== null, client)
   const [error, setError] = useState<string | null>(null)
 
@@ -203,6 +204,7 @@ export default function Results({
     <ResultsView
       code={code}
       board={board}
+      stats={stats}
       participants={ordered}
       columns={columns}
       wordsStatus={words.status}
