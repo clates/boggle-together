@@ -2,18 +2,18 @@
 // read out loud ("pecan 2654"), so input is forgiving: any case, any separator (or none), pasted
 // links or messages. The hyphen is shown automatically and never has to be typed.
 
-/** The words create_room picks from. Must equal the list in supabase/migrations/0005_room_code_words.sql (tested). */
+/** The words create_room picks from. Must equal the list in supabase/migrations/0006_short_room_words.sql (tested). */
 export const ROOM_WORDS: readonly string[] = [
-  'OAK', 'BEETROOT', 'HAYSTACK', 'BIRCH', 'MAPLE', 'SPRUCE', 'WILLOW', 'HAZEL', 'SHRUB', 'ASPEN',
-  'LINDEN', 'HOLLY', 'LAUREL', 'REDWOOD', 'TEAK', 'PALM', 'BAMBOO', 'BONSAI', 'SAPLING', 'STUMP',
-  'BARK', 'WALNUT', 'PECAN', 'CASHEW', 'NUTMEG', 'ACORN', 'HUSK', 'CHERRY', 'FIELD', 'OLIVE',
-  'MANGO', 'LEMON', 'LIME', 'ORANGE', 'PEACH', 'GRAPE', 'KIWI', 'THATCH', 'CLOVER', 'TULIP',
-  'DAISY', 'LILAC', 'TRUFFLE', 'POPPY', 'LOTUS', 'HEATHER', 'BLUEBELL', 'BRAMBLE', 'CACTUS', 'FERN',
-  'MOSS', 'FROG', 'BLOSSOM', 'BUD', 'LEAF', 'POLLEN', 'NECTAR', 'SAGE', 'MINT', 'DILL',
-  'THISTLE', 'STRAW', 'LAWN', 'PEPPER', 'MUSTARD', 'RADISH', 'BEAN', 'SQUASH', 'PUMPKIN', 'KALE',
-  'ONION', 'PRIMROSE', 'PARSNIP', 'CABBAGE', 'SPINACH', 'WICKER', 'YAM', 'PLANTER', 'WHEAT', 'BARLEY',
-  'RICE', 'COTTON', 'FLAX', 'COFFEE', 'SNOWDROP', 'BRANCH', 'GARDEN', 'MEADOW', 'ORCHARD', 'GROVE',
-  'FOREST', 'HEDGE', 'HARVEST', 'SOIL', 'MULCH', 'COMPOST', 'SHAMROCK', 'SHOVEL', 'BUCKET', 'WAGON',
+  'OAK', 'BIRCH', 'MAPLE', 'HAZEL', 'SHRUB', 'ASPEN', 'HOLLY', 'TEAK', 'PALM', 'STUMP',
+  'BARK', 'PECAN', 'ACORN', 'HUSK', 'FIELD', 'OLIVE', 'MANGO', 'LEMON', 'LIME', 'PEACH',
+  'GRAPE', 'KIWI', 'TULIP', 'DAISY', 'LILAC', 'POPPY', 'LOTUS', 'FERN', 'MOSS', 'FROG',
+  'BUD', 'LEAF', 'SAGE', 'MINT', 'DILL', 'STRAW', 'LAWN', 'BEAN', 'KALE', 'ONION',
+  'YAM', 'WHEAT', 'RICE', 'FLAX', 'GROVE', 'HEDGE', 'SOIL', 'MULCH', 'ALDER', 'CEDAR',
+  'ROWAN', 'APPLE', 'BASIL', 'ASTER', 'ROBIN', 'FINCH', 'OTTER', 'WREN', 'LAKE', 'POND',
+  'BROOK', 'CREEK', 'RIVER', 'MARSH', 'GLADE', 'GLEN', 'CLIFF', 'DUNE', 'RIDGE', 'COVE',
+  'MESA', 'CLOUD', 'FROST', 'STORM', 'MOON', 'SAND', 'CORN', 'OATS', 'HONEY', 'PRUNE',
+  'GOURD', 'CAPER', 'CHARD', 'GUAVA', 'CAROB', 'TANSY', 'SEDGE', 'TWIG', 'STEM', 'HERON',
+  'EAGLE', 'PEONY', 'CLOVE', 'ELK', 'LARK', 'SWAN', 'OWL', 'CRANE', 'RAVEN', 'THORN',
 ]
 
 /** The original 0001 list. Rooms made before 0005 still carry these words, so they are valid, never "corrected". */
@@ -26,7 +26,21 @@ export const LEGACY_ROOM_WORDS: readonly string[] = [
   'GINKGO', 'CATALPA', 'MESQUITE', 'LAUREL',
 ]
 
-const KNOWN = new Set([...ROOM_WORDS, ...LEGACY_ROOM_WORDS])
+/** The 0005 list (up to eight letters). Rooms made before 0006 can still carry these words, so they stay valid. */
+export const EARLIER_ROOM_WORDS: readonly string[] = [
+  'OAK', 'BEETROOT', 'HAYSTACK', 'BIRCH', 'MAPLE', 'SPRUCE', 'WILLOW', 'HAZEL', 'SHRUB', 'ASPEN',
+  'LINDEN', 'HOLLY', 'LAUREL', 'REDWOOD', 'TEAK', 'PALM', 'BAMBOO', 'BONSAI', 'SAPLING', 'STUMP',
+  'BARK', 'WALNUT', 'PECAN', 'CASHEW', 'NUTMEG', 'ACORN', 'HUSK', 'CHERRY', 'FIELD', 'OLIVE',
+  'MANGO', 'LEMON', 'LIME', 'ORANGE', 'PEACH', 'GRAPE', 'KIWI', 'THATCH', 'CLOVER', 'TULIP',
+  'DAISY', 'LILAC', 'TRUFFLE', 'POPPY', 'LOTUS', 'HEATHER', 'BLUEBELL', 'BRAMBLE', 'CACTUS', 'FERN',
+  'MOSS', 'FROG', 'BLOSSOM', 'BUD', 'LEAF', 'POLLEN', 'NECTAR', 'SAGE', 'MINT', 'DILL',
+  'THISTLE', 'STRAW', 'LAWN', 'PEPPER', 'MUSTARD', 'RADISH', 'BEAN', 'SQUASH', 'PUMPKIN', 'KALE',
+  'ONION', 'PRIMROSE', 'PARSNIP', 'CABBAGE', 'SPINACH', 'WICKER', 'YAM', 'PLANTER', 'WHEAT', 'BARLEY',
+  'RICE', 'COTTON', 'FLAX', 'COFFEE', 'SNOWDROP', 'BRANCH', 'GARDEN', 'MEADOW', 'ORCHARD', 'GROVE',
+  'FOREST', 'HEDGE', 'HARVEST', 'SOIL', 'MULCH', 'COMPOST', 'SHAMROCK', 'SHOVEL', 'BUCKET', 'WAGON',
+]
+
+const KNOWN = new Set([...ROOM_WORDS, ...EARLIER_ROOM_WORDS, ...LEGACY_ROOM_WORDS])
 export const MAX_WORD_LENGTH = Math.max(...[...KNOWN].map((w) => w.length))
 export const DIGITS = 4
 

@@ -6,6 +6,7 @@ import { unlockAudio } from '../lib/audio'
 import type { Client } from '../lib/supabase'
 import type { Participant, useRoom } from '../lib/useRoom'
 import { useRoundWords, type RoundWordsStatus } from '../lib/useRoundWords'
+import { boardStats, type BoardStats } from '../lib/boardStats'
 import { markShared } from '../lib/words'
 
 // The slice of the room hook this screen needs (the hook's return satisfies it).
@@ -39,6 +40,27 @@ export type ResultsViewProps = {
 }
 
 const LARGE_UP_TO = 4
+
+// A thin strip of round facts above the word lists.
+function StatsRibbon({ stats }: { stats: BoardStats }) {
+  const items: [string, string, string][] = [
+    ['Longest word', stats.longest, `${stats.longest.length} letters`],
+    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `in ${stats.busiestTile.words} ${stats.busiestTile.words === 1 ? 'word' : 'words'}`],
+    ['Most exotic', stats.exotic.word, `${stats.exotic.points} points in Scrabble`],
+  ]
+  return (
+    <dl className="stats-ribbon" data-testid="stats-ribbon">
+      {items.map(([label, value, note]) => (
+        <div key={label} className="stat">
+          <dt>{label}</dt>
+          <dd>
+            <b>{value}</b> <span>{note}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
 
 function WordColumns({ columns }: { columns: ResultsColumn[] }) {
   const size = columns.length <= LARGE_UP_TO ? 'large' : 'small'
@@ -87,6 +109,11 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
     )
   else words = <WordColumns columns={columns} />
 
+  const stats = useMemo(
+    () => (board && wordsStatus === 'ready' ? boardStats(board, columns.flatMap((c) => c.words.map((w) => w.word))) : null),
+    [board, wordsStatus, columns],
+  )
+
   return (
     <div className="results" data-testid="results">
       <aside className="results-side">
@@ -117,7 +144,10 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
           {onLeave && <LeaveRoom onLeave={onLeave} />}
         </div>
       </aside>
-      {words}
+      <div className="results-main">
+        {stats && <StatsRibbon stats={stats} />}
+        {words}
+      </div>
     </div>
   )
 }

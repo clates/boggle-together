@@ -175,6 +175,30 @@ describe('Results', () => {
     expect(screen.queryByRole('button', { name: 'Start anyway' })).toBeNull()
   })
 
+  it('shows a stats ribbon from the words that can be found on the board', async () => {
+    // board: T E R S / A N O I / L D P M / U C H E
+    const rows: Row[] = [
+      { participant_id: 't4', word: 'TEARS' }, // not on the board: R and A are not neighbours
+      { participant_id: 't4', word: 'TERS' },
+      { participant_id: 't4', word: 'ZZZZZZZZ' }, // longest, but not on the board
+      { participant_id: 't3', word: 'TERS' },
+      { participant_id: 't3', word: 'NOSE' }, // not on the board: S does not touch E
+      { participant_id: 't3', word: 'ROIS' },
+    ]
+    setup({}, rows)
+    const ribbon = await screen.findByTestId('stats-ribbon')
+    expect(within(ribbon).getByText('Longest word').nextElementSibling).toHaveTextContent('ROIS') // 4 letters, first alphabetically
+    expect(within(ribbon).getByText('Busiest tile').nextElementSibling).toHaveTextContent(/R.*in 2 words/)
+    expect(within(ribbon).getByText('Most exotic').nextElementSibling).toHaveTextContent('ROIS')
+    expect(ribbon).not.toHaveTextContent('ZZZZZZZZ')
+  })
+
+  it('has no stats ribbon when no typed word is on the board', async () => {
+    setup({}, [{ participant_id: 't4', word: 'ZZZZ' }])
+    await columns()
+    expect(screen.queryByTestId('stats-ribbon')).toBeNull()
+  })
+
   it('shows a friendly line when nobody typed', async () => {
     const hs = [person('h1', 'household', 'Lates')]
     setup({ participants: hs, me: hs[0] }, [])

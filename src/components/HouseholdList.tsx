@@ -13,7 +13,14 @@ export default function HouseholdList({
   onRemove?: (id: string) => void
 }) {
   const households = participants.filter((p) => p.kind === 'household')
-  const typists = participants.length - households.length
+  const typists = participants.filter((p) => p.kind === 'typist')
+  const remove = (p: Participant) =>
+    onRemove && p.id !== meId ? (
+      <>
+        {' '}
+        <ConfirmTap label="Remove" ariaLabel={`Remove ${p.name}`} question={`Remove ${p.name}?`} onConfirm={() => onRemove(p.id)} />
+      </>
+    ) : null
   return (
     <div className="household-list">
       <ul>
@@ -21,16 +28,23 @@ export default function HouseholdList({
           <li key={p.id}>
             <span aria-label={p.ready ? 'ready' : 'not ready'}>{p.ready ? '✅' : '⏳'}</span>{' '}
             <span>{p.name}</span>
-            {onRemove && p.id !== meId && (
-              <>
-                {' '}
-                <ConfirmTap label="Remove" ariaLabel={`Remove ${p.name}`} question={`Remove ${p.name}?`} onConfirm={() => onRemove(p.id)} />
-              </>
-            )}
+            {remove(p)}
           </li>
         ))}
       </ul>
-      {typists > 0 && <p className="muted">{typists === 1 ? '1 person typing on a phone' : `${typists} people typing on phones`}</p>}
+      {typists.length > 0 && (
+        <>
+          <p className="muted">{typists.length === 1 ? 'Typing on a phone' : 'Typing on phones'}</p>
+          <ul className="typist-names">
+            {typists.map((p) => (
+              <li key={p.id}>
+                <span aria-hidden="true">⌨️</span> <span>{p.name}</span>
+                {remove(p)}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   )
 }

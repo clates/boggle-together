@@ -10,7 +10,7 @@ const p = (id: string, name: string, kind: Participant['kind'], ready: boolean):
 })
 
 describe('HouseholdList', () => {
-  it('shows check for ready, hourglass for not, omits typists', () => {
+  it('shows check for ready, hourglass for not, and typists by name below', () => {
     render(
       <HouseholdList
         participants={[p('1', 'Smiths', 'household', true), p('2', 'Joneses', 'household', false), p('3', 'Tina', 'typist', false)]}
@@ -18,13 +18,16 @@ describe('HouseholdList', () => {
     )
     expect(screen.getByText('Smiths').closest('li')).toHaveTextContent('✅')
     expect(screen.getByText('Joneses').closest('li')).toHaveTextContent('⏳')
-    expect(screen.queryByText('Tina')).not.toBeInTheDocument()
-    expect(screen.getByText('1 person typing on a phone')).toBeInTheDocument()
+    expect(screen.getByText('Tina').closest('li')).toHaveTextContent('⌨️')
+    expect(screen.getByText('Tina').closest('li')).not.toHaveTextContent('⏳')
+    expect(screen.getByText('Typing on a phone')).toBeInTheDocument()
   })
 
-  it('counts several phone typists in plain words', () => {
+  it('names several phone typists', () => {
     render(<HouseholdList participants={[p('1', 'Smiths', 'household', true), p('2', 'Tina', 'typist', false), p('3', 'Jo', 'typist', false)]} />)
-    expect(screen.getByText('2 people typing on phones')).toBeInTheDocument()
+    expect(screen.getByText('Typing on phones')).toBeInTheDocument()
+    expect(screen.getByText('Tina')).toBeInTheDocument()
+    expect(screen.getByText('Jo')).toBeInTheDocument()
   })
 
   it('has no Remove buttons unless asked', () => {
