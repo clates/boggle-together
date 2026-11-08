@@ -39,12 +39,13 @@ function makeRoom(over: Partial<InGameRoom> & { now?: () => number; roomOver?: P
   }
 }
 
-// jsdom normalizes colors (hsl -> rgb), so compare against the same normalization of the expected value.
+// jsdom normalizes colors (hex -> rgb), so compare against the same normalization of the expected value.
 function css(color: string) {
   const probe = document.createElement('div')
   probe.style.background = color
   return probe.style.background
 }
+const fillColor = (el: HTMLElement) => css(el.style.getPropertyValue('--fill'))
 
 let ctx: FakeAudioContext
 let Ctor: ReturnType<typeof vi.fn>
@@ -72,15 +73,24 @@ describe('InGame playing', () => {
     render(<InGame code="ABCD" room={makeRoom({ now: () => T0 })} />)
     const fill = screen.getByTestId('fill')
     expect(fill.style.height).toBe('100%')
-    expect(fill.style.background).toBe(css('hsl(130 70% 45%)'))
+    expect(fillColor(fill)).toBe(css('#42d0a0'))
     expect(fill).toHaveAttribute('aria-hidden', 'true')
+    expect(fill).not.toHaveClass('fill-low')
   })
 
-  it('fill is 50% tall and yellow-green at progress 0.5', () => {
+  it('fill is 50% tall and sunflower yellow at progress 0.5', () => {
     render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + ROUND_MS / 2 })} />)
     const fill = screen.getByTestId('fill')
     expect(fill.style.height).toBe('50%')
-    expect(fill.style.background).toBe(css('hsl(65 70% 45%)'))
+    expect(fillColor(fill)).toBe(css('#f9d047'))
+    expect(fill).not.toHaveClass('fill-low')
+  })
+
+  it('fill is red and striped near the end', () => {
+    render(<InGame code="ABCD" room={makeRoom({ now: () => T0 + ROUND_MS * 0.9 })} />)
+    const fill = screen.getByTestId('fill')
+    expect(fillColor(fill)).toBe(css('#d74a21'))
+    expect(fill).toHaveClass('fill-low')
   })
 
   it('fill is absent at progress 0', () => {

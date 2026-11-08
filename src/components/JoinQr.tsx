@@ -56,8 +56,9 @@ export default function JoinQr({ url }: { url: string }) {
           viewBox={`0 0 ${matrix.size} ${matrix.size}`}
           shapeRendering="crispEdges"
         >
-          <rect width={matrix.size} height={matrix.size} fill="#fff" />
-          <path d={matrix.path} fill="#111" />
+          {/* colours come from the --qr-light / --qr-dark tokens (index.css) */}
+          <rect className="qr-light" width={matrix.size} height={matrix.size} />
+          <path className="qr-dark" d={matrix.path} />
         </svg>
       </div>
       {caption}

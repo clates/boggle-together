@@ -46,7 +46,8 @@ describe('JoinQr', () => {
     expect(lib.calls[0].level).toBe('M')
     expect(svg.getAttribute('viewBox')).toBe('0 0 29 29')
     const bg = svg.querySelector('rect')!
-    expect(bg.getAttribute('fill')).toBe('#fff')
+    expect(bg).toHaveClass('qr-light')
+    expect(svg.querySelector('path')).toHaveClass('qr-dark')
     expect(bg.getAttribute('width')).toBe('29')
     // the diagonal: one dark module per row, offset by the quiet zone
     const d = svg.querySelector('path')!.getAttribute('d')!

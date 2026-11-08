@@ -1,22 +1,127 @@
-:root { font-family: system-ui, sans-serif; font-size: 20px; color: #222; background: #fff; }
-body { margin: 0; background: #fff; }
+/* Boggle Together: design tokens ("Table Blue"). Every colour in the app lives in this block; the rules
+   below use only var(--token) (src/styles.test.ts enforces it). Hex values are the sRGB rendering of the
+   OKLCH in each comment. Light theme only. */
+:root {
+  /* ---- surfaces ---- */
+  --bg: #E4F2FE;                 /* oklch(95.5% 0.022 245)  faint blue: page + timer "empty" area */
+  --surface: #F7FBFE;            /* oklch(98.5% 0.006 245)  panels, inputs, dog-ear panel, sticky headers on panels */
+  --line: #B0C0D1;               /* oklch(80% 0.030 250)    decorative dividers only (1.6:1, not for UI edges) */
+  --line-strong: #677689;        /* oklch(56% 0.035 255)    input borders, outline buttons in neutral use (>= 4:1) */
+
+  /* ---- tiles (the "cubes") ---- */
+  --tile-face: #FCF5DF;          /* oklch(97% 0.030 92)     ivory */
+  --tile-shade: #E5D6B6;         /* oklch(88% 0.045 85)     ivory in shadow: lower bevel, dog-ear underside */
+  --tile-edge: #162137;          /* = --ink                 tile outline: >= 3.7:1 on bg and every timer colour */
+  --tile-ink: #162137;           /* = --ink                 14.7:1 on ivory (AAA) */
+  --tile-drop: rgb(22 33 55 / 0.22); /* soft shadow under tiles and raised panels */
+
+  /* ---- text ---- */
+  --ink: #162137;                /* oklch(25% 0.045 262)    primary text, unique words, room code */
+  --ink-2: #404E63;              /* oklch(42% 0.040 258)    secondary text, labels, subtle buttons */
+  --ink-muted: #606D7D;          /* oklch(53% 0.030 255)    helper text, counts, shared (struck) words: 4.6:1 on bg */
+  --unique-word: var(--ink);
+  --shared-word: var(--ink-muted);
+  --link: #234993;               /* = --cta-secondary; always underlined */
+
+  /* ---- primary CTA: red ---- */
+  --cta-primary: #BA1C2D;        /* oklch(51% 0.190 23)     white text 6.4:1 */
+  --cta-primary-hover: #A50B22;  /* oklch(46% 0.180 23) */
+  --cta-primary-pressed: #8D091C;/* oklch(41% 0.160 23) */
+  --cta-primary-edge: #6F0D17;   /* oklch(35% 0.130 23)     the 3D lip under the button */
+  /* ---- secondary CTA: dark blue ---- */
+  --cta-secondary: #234993;      /* oklch(42% 0.130 262)    white text 8.6:1 */
+  --cta-secondary-hover: #193B7E;   /* oklch(37% 0.120 262) */
+  --cta-secondary-pressed: #102E6A; /* oklch(32% 0.110 262) */
+  --cta-secondary-edge: #0E2654;    /* oklch(28% 0.090 262) */
+  --on-cta: #FFFFFF;
+  /* ---- outline (tertiary) button: blue text + border on surface ---- */
+  --cta-outline-hover: #E9EFF8;    /* blue text 7.4:1 */
+  --cta-outline-pressed: #D9E3F2;  /* blue text 6.6:1 */
+  /* ---- disabled (no opacity tricks: label stays readable, 6.6:1) ---- */
+  --disabled-bg: #DDE4EB;        /* oklch(91.5% 0.012 250) */
+  --disabled-ink: #404E63;       /* = --ink-2 */
+  --disabled-border: #B0C0D1;    /* = --line, dashed */
+
+  /* ---- focus: a blue ring outside a light inner ring. The pair carries itself (blue vs the inner ring
+     4.58:1), so it shows on any background; the blue alone is 4.18:1 on bg and 4.58:1 on surface, but only
+     2.44:1 over the green timer (p = 1) and 1.81:1 over the orange (p = 0.3), where the inner ring does the work. ---- */
+  --focus: #1A6FE1;              /* oklch(56% 0.190 258) */
+  --focus-inner: #F7FBFE;        /* = --surface */
+  --focus-ring: 0 0 0 3px var(--focus-inner), 0 0 0 6px var(--focus);
+
+  /* ---- status ---- */
+  --error: #BA1C2D;              /* = --cta-primary (one red for "act" and "problem"); always paired with text */
+  --warning-soft: #FEE9BE;       /* oklch(94% 0.060 85)     sound prompt button */
+
+  /* ---- timer (the background). The fill colour is computed in src/lib/drain.ts (OKLCH sweep: bluish
+     green at p = 1, sunflower at 0.5, vermilion from 0.15, output as hex); it arrives as --fill /
+     --fill-edge on the .fill element, so the keyframes live only there. ---- */
+  --timer-edge-width: 6px;       /* dark "waterline" on top of the fill (drainEdge) */
+  --timer-low-stripes: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.22) 0 9px, transparent 9px 18px);
+
+  /* ---- QR code: plain light and dark modules so every scanner reads it ---- */
+  --qr-light: #FFFFFF;
+  --qr-dark: var(--ink);
+
+  /* ---- typist phone: the word-list card lets the timer show through ---- */
+  --typist-card: rgb(247 251 254 / 0.72); /* --surface at 72% */
+
+  /* ---- shape ---- */
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow-panel: 0 6px 20px rgb(22 33 55 / 0.18);
+  --shadow-flap: rgb(22 33 55 / 0.35);
+
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 20px;
+  color: var(--ink);
+  background: var(--bg);
+
+  color-scheme: light;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); }
+a { color: var(--link); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
 main { max-width: 640px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
 h1 { margin: 0; font-size: 2rem; }
-button, input[type='text'], input:not([type]) { font: inherit; min-height: 48px; padding: 8px 16px; border-radius: 10px; border: 2px solid #222; background: #fff; color: #222; }
-button { cursor: pointer; }
-button.primary { background: #222; color: #fff; }
-button:disabled { opacity: 0.5; }
-label { display: flex; flex-direction: column; gap: 6px; }
+/* Buttons. Default = outline (surface fill, blue border and text). .primary = red, .secondary = blue,
+   both with a 4 px "lip" that flattens when pressed. .subtle = quiet. Disabled is a dashed grey slab
+   (no opacity: the label stays readable). Hover only where there is a real pointer (no sticky iPad hover). */
+button, input[type='text'], input:not([type]) { font: inherit; min-height: 48px; padding: 8px 16px; border-radius: var(--radius); border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+button { cursor: pointer; border-color: var(--cta-secondary); color: var(--cta-secondary); font-weight: 700; }
+input[type='text'], input:not([type]) { font-weight: 500; }
+input::placeholder { color: var(--ink-muted); }
+button.primary, button.danger { background: var(--cta-primary); border-color: var(--cta-primary); color: var(--on-cta); box-shadow: 0 4px 0 var(--cta-primary-edge); }
+button.secondary { background: var(--cta-secondary); border-color: var(--cta-secondary); color: var(--on-cta); box-shadow: 0 4px 0 var(--cta-secondary-edge); }
+@media (hover: hover) {
+  button:enabled:hover { background: var(--cta-outline-hover); }
+  button.primary:enabled:hover, button.danger:enabled:hover { background: var(--cta-primary-hover); border-color: var(--cta-primary-hover); }
+  button.secondary:enabled:hover { background: var(--cta-secondary-hover); border-color: var(--cta-secondary-hover); }
+}
+button:enabled:active { background: var(--cta-outline-pressed); }
+button.primary:enabled:active, button.danger:enabled:active { background: var(--cta-primary-pressed); border-color: var(--cta-primary-pressed); box-shadow: 0 1px 0 var(--cta-primary-edge); transform: translateY(3px); }
+button.secondary:enabled:active { background: var(--cta-secondary-pressed); border-color: var(--cta-secondary-pressed); box-shadow: 0 1px 0 var(--cta-secondary-edge); transform: translateY(3px); }
+button:disabled { background: var(--disabled-bg); color: var(--disabled-ink); border: 2px dashed var(--disabled-border); box-shadow: none; transform: none; cursor: not-allowed; }
+/* Focus: a light inner ring and a blue outer ring, on top of the lip for filled buttons. */
+/* The transparent outline is invisible normally but becomes the focus indicator in forced-colors mode,
+   where box-shadows are dropped. */
+button:focus-visible, input:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus-ring); }
+button.primary:focus-visible, button.danger:focus-visible { box-shadow: 0 4px 0 var(--cta-primary-edge), var(--focus-ring); }
+button.secondary:focus-visible { box-shadow: 0 4px 0 var(--cta-secondary-edge), var(--focus-ring); }
+button:disabled:focus-visible { box-shadow: var(--focus-ring); }
+input[type='radio'] { accent-color: var(--cta-secondary); }
+input[type='radio']:focus-visible { box-shadow: none; outline: 3px solid var(--focus); outline-offset: 2px; }
+label { display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-weight: 600; }
 form { display: flex; flex-direction: column; gap: 12px; }
 /* Join form: the two ways to play, as cards (each a labelled radio). */
 .mode-cards { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.mode-cards legend { padding: 0; margin-bottom: 6px; }
-.mode-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid #bbb; border-radius: 12px; cursor: pointer; }
-.mode-card.selected { border-color: #222; }
+.mode-cards legend { padding: 0; margin-bottom: 6px; color: var(--ink-2); font-weight: 600; }
+.mode-card { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); color: var(--ink); font-weight: 400; cursor: pointer; }
+.mode-card.selected { border-color: var(--cta-secondary); box-shadow: inset 0 0 0 1px var(--cta-secondary); }
 .mode-card input { width: 24px; height: 24px; margin: 3px 0 0; flex: none; }
 .mode-text { display: flex; flex-direction: column; gap: 4px; }
 .mode-title { font-weight: 700; }
-.mode-line { font-size: 16px; line-height: 1.4; color: #555; }
+.mode-line { font-size: 16px; line-height: 1.4; color: var(--ink-2); }
 /* Home and not-found: the room-code field. 16 px or more so iOS does not zoom on focus; the longest code (SNOWDROP-8888) fits a 360 px phone. */
 .intro { margin: 0; line-height: 1.45; }
 .code-form { gap: 8px; }
@@ -25,67 +130,91 @@ input.code-input { font-size: max(16px, min(1.6rem, 7vw)); font-weight: 800; let
 button.suggestion { align-self: flex-start; font-weight: 700; }
 .not-found { font-size: 1.6rem; line-height: 1.25; }
 .nowrap { white-space: nowrap; }
-.error { color: #b00020; margin: 0; }
-.muted { color: #666; margin: 0; }
-/* sized so the longest code (e.g. MAHOGANY-8888) stays on one line from phones to tablets */
-.code { font-size: min(2.8rem, 8.2vw); font-weight: 800; letter-spacing: 0.08em; margin: 0; white-space: nowrap; }
-.link { word-break: break-all; }
+/* Errors never rely on colour alone: a leading "!" (silent for screen readers where supported). */
+.error { color: var(--error); font-weight: 600; margin: 0; }
+.error::before { content: "! "; content: "! " / ""; font-weight: 900; }
+.muted { color: var(--ink-muted); margin: 0; }
+/* The room code on an ivory chip (the tile colours). Sized so the longest code (e.g. MAHOGANY-8888)
+   stays on one line from phones to tablets, chip included. */
+.code { align-self: flex-start; max-width: 100%; box-sizing: border-box; font-size: min(2.8rem, 7.4vw); font-weight: 800; letter-spacing: 0.08em; margin: 0; padding: 0.1em 0.4em 0.18em; white-space: nowrap; background: var(--tile-face); color: var(--tile-ink); border: 3px solid var(--tile-edge); border-radius: 16px; box-shadow: inset 0 -6px 0 var(--tile-shade), 0 4px 0 var(--tile-drop); }
+.link { word-break: break-all; color: var(--ink-2); }
 .household-list ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+/* Each household is a surface row with a divider-line border. */
+.household-list li > button.subtle, .household-list li > .confirm-tap { margin-left: auto; }
+.household-list > .muted { margin-top: 8px; }
+.household-list li { font-size: 1.3rem; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 48px; padding: 4px 6px 4px 10px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 /* Quiet secondary actions (Remove, Leave room). Still 48 px tall for fingers. */
-button.subtle { font-size: 16px; min-width: 48px; padding: 4px 12px; border-color: #bbb; color: #555; background: transparent; }
-button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-width: 64px; }
+/* Its edge is --line-strong (4.46:1 on a surface row, 4.07:1 on the page): a control, so at least 3:1. */
+button.subtle { font-size: 16px; font-weight: 600; min-width: 48px; padding: 4px 12px; border-color: var(--line-strong); color: var(--ink-2); background: transparent; }
+@media (hover: hover) { button.subtle:enabled:hover { border-color: var(--ink); color: var(--ink); background: transparent; } }
+button.subtle:enabled:active { border-color: var(--ink); color: var(--ink); background: var(--cta-outline-pressed); }
+button.danger { min-width: 64px; }
 .confirm-tap { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 16px; }
 .confirm-tap button { font-size: 16px; padding: 4px 14px; }
-.leave-room button.subtle { border-color: transparent; text-decoration: underline; padding-left: 0; }
+.leave-room button.subtle { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; padding-left: 0; }
+.leave-room button.subtle:enabled:hover, .leave-room button.subtle:enabled:active { border-color: transparent; background: transparent; }
+.confirm-tap > span { color: var(--ink); }
 .board-wrap { width: min(100%, 100vh); aspect-ratio: 1; margin: 0 auto; container-type: size; }
 .board { width: 100%; height: 100%; aspect-ratio: 1; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 3%; }
-.tile { display: flex; align-items: center; justify-content: center; background: #fff; border: 3px solid #222; border-radius: 12%; font-weight: 800; font-size: 14cqmin; line-height: 1; }
+/* Ivory cubes: an ink outline, a shaded lower bevel and a soft drop, sized to the board (cqmin). */
+.tile { display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding-bottom: 1.2cqmin; background: var(--tile-face); color: var(--tile-ink); border: max(3px, 0.6cqmin) solid var(--tile-edge); border-radius: 14%; font-weight: 800; font-size: 14cqmin; line-height: 1; box-shadow: inset 0 -1.6cqmin 0 var(--tile-shade), 0 0.8cqmin 0 var(--tile-drop); }
 .tile-long { font-size: 10cqmin; }
 
 /* In-game (shared screen). The background is the timer: a fill anchored at the bottom drains away. */
 /* --board-size fills the shorter side, but on near-square screens it leaves --tab-room (both sides,
    along the longer axis) so the dog-ear tab never covers the top-right tile. */
 /* --top / --bottom reserve strips for the sound prompt and the locked bar; the board fits between. */
-.ingame { position: fixed; inset: 0; background: #fff; overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
-.fill { position: absolute; left: 0; right: 0; bottom: 0; transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
+.ingame { position: fixed; inset: 0; background: var(--bg); overflow: hidden; --tab-room: 100px; --top: 0px; --bottom: 0px; --avail-h: calc(100dvh - var(--top) - var(--bottom)); --board-size: min(calc(min(100vw, var(--avail-h)) - 24px), calc(max(100vw, var(--avail-h)) - var(--tab-room))); }
+/* --fill / --fill-edge come from TimerFill (src/lib/drain.ts): the colour, and a darker waterline along the top. */
+.fill { position: absolute; left: 0; right: 0; bottom: 0; background-color: var(--fill); box-shadow: inset 0 var(--timer-edge-width) 0 var(--fill-edge); transition: height 120ms linear, background-color 120ms linear; pointer-events: none; }
+/* The last 20%: faint static stripes, so the end is visible without relying on red. */
+.fill-low { background-image: var(--timer-low-stripes); }
 .stage { position: absolute; inset: var(--top) 0 var(--bottom) 0; display: flex; align-items: center; justify-content: center; }
 .ingame .board-wrap { width: var(--board-size); height: var(--board-size); margin: 0; flex: none; }
-.ingame .tile { border-width: max(3px, 0.6cqmin); }
 .board-blank { width: var(--board-size); height: var(--board-size); }
 .ingame-locked { --bottom: 150px; }
-.locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; }
-.pens-down { font-size: 2.6rem; font-weight: 900; min-height: 104px; padding: 12px 56px; border-radius: 18px; border: 0; background: #b3261e; color: #fff; box-shadow: 0 6px 0 #7a1712; }
-.pens-down:active { transform: translateY(3px); box-shadow: 0 3px 0 #7a1712; }
+.locked-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 150px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; padding: 12px 16px; box-sizing: border-box; background: var(--surface); border-top: 2px solid var(--line); }
+/* Pens down! is the primary button, larger, with a deeper lip. */
+/* Sized down on a phone so it stays one line inside the 150 px bar. */
+.pens-down { font-size: min(2.6rem, 11vw); font-weight: 900; min-height: 104px; max-width: 100%; padding: 12px clamp(20px, 6vw, 56px); white-space: nowrap; border-radius: var(--radius-lg); }
+button.pens-down:enabled { box-shadow: 0 7px 0 var(--cta-primary-edge); }
+button.pens-down:enabled:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--cta-primary-edge); }
+button.pens-down:focus-visible { box-shadow: 0 7px 0 var(--cta-primary-edge), var(--focus-ring); }
 .waiting { font-size: 1.8rem; font-weight: 800; margin: 0; }
 .show-results { font-size: 1.3rem; font-weight: 700; min-height: 64px; }
 .locked-bar .error { flex-basis: 100%; text-align: center; }
 .countdown { position: absolute; inset: var(--top) 0 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; }
 .countdown-number { font-size: 55vmin; font-weight: 900; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
-.countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: #444; }
+.countdown-line { font-size: 5vmin; font-weight: 700; margin: 0; color: var(--ink-2); }
 /* Shown when the browser is holding sound back (e.g. after a refresh): a top strip, clear of the board and the dog-ear. */
 .ingame-sound-prompt { --top: 84px; }
 .sound-prompt { position: absolute; top: 0; left: 0; right: 64px; height: 84px; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 12px; box-sizing: border-box; }
-.sound-enable { font-size: 1.2rem; font-weight: 800; min-height: 48px; padding: 6px 20px; border-radius: 12px; border: 2px solid #222; background: #ffe680; color: #222; }
-.sound-note { margin: 0; font-size: 0.85rem; color: #555; text-align: center; }
+button.sound-enable, button.sound-enable:enabled:hover, button.sound-enable:enabled:active { font-size: 1.2rem; font-weight: 800; min-height: 48px; padding: 6px 20px; border: 2px solid var(--ink); background: var(--warning-soft); color: var(--ink); }
+button.sound-enable:enabled:active { transform: translateY(2px); }
+/* ink, not ink-2: the strip can sit over the full (green) fill */
+.sound-note { margin: 0; font-size: 0.85rem; color: var(--ink); text-align: center; }
 .dogear { position: absolute; top: 0; right: 0; z-index: 2; }
 /* A 56 px tap target (invisible) around a 44 px folded corner. */
-.dogear-tab { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
-.dogear-tab::before { content: ''; position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: 0 0 0 10px; background: linear-gradient(to bottom left, transparent 50%, #e2e2e2 50%, #fff 100%); filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.3)); }
-.dogear-panel { position: absolute; top: 60px; right: 12px; width: max-content; background: #fff; border: 2px solid #222; border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); }
+.dogear-tab, button.dogear-tab:enabled:hover, button.dogear-tab:enabled:active { display: block; position: relative; width: 56px; height: 56px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+/* An ivory flap (tile colours) with an ink edge, so it reads on the page blue and on every timer colour. */
+.dogear-tab::before { content: ''; position: absolute; top: 0; right: 0; width: 46px; height: 46px; border-radius: 0 0 0 10px; background: linear-gradient(to bottom left, transparent 50%, var(--tile-shade) 50%, var(--tile-face) 100%); filter: drop-shadow(-2px 2px 0 var(--ink)) drop-shadow(-2px 3px 4px var(--shadow-flap)); }
+/* Inset ring: the tab sits in the corner, so an outer ring would be cut off by the screen edge. */
+button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0 0 0 3px var(--focus), inset 0 0 0 6px var(--focus-inner); }
+.dogear-panel { position: absolute; top: 62px; right: 12px; width: max-content; background: var(--surface); color: var(--ink); border: 2px solid var(--ink); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-panel); }
+.dogear-panel .muted { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .dogear-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.08em; margin: 0; }
 
 /* Results: left pane (board, room, households, ready), right pane (one scroll container of typist columns). */
-.results { position: fixed; inset: 0; display: flex; gap: 24px; padding: 24px; box-sizing: border-box; background: #fff; }
+.results { position: fixed; inset: 0; display: flex; gap: 24px; padding: 24px; box-sizing: border-box; background: var(--bg); }
 .results-side { flex: none; width: 260px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 .results-board { flex: none; width: 100%; }
 .results-board .board-wrap { width: 100%; }
-.results-board .tile { border-width: 3px; }
+.results-board .tile { border-width: 2.5px; border-radius: 16%; padding-bottom: 2cqmin; box-shadow: inset 0 -2cqmin 0 var(--tile-shade), 0 2px 0 var(--tile-drop); }
 .results-info { display: flex; flex-direction: column; gap: 14px; }
-.results-room-label { margin: 0; font-size: 13px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.results-room-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-2); letter-spacing: 0.08em; text-transform: uppercase; }
 .results-room-code { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.04em; }
-.results-info .household-list li { font-size: 20px; }
-.results-info .household-list .muted { font-size: 16px; margin-top: 8px; }
+.results-info .household-list li { font-size: 18px; }
+.results-info .household-list .muted { font-size: 16px; }
 .results-controls { display: flex; flex-direction: column; gap: 10px; }
 .results-controls button.primary { font-size: 22px; font-weight: 700; }
 .results-note { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; font-size: 24px; }
@@ -95,12 +224,13 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 /* Subgrid: every header shares row 1, so all lists start at the same height even when a name wraps. */
 .results-col { display: grid; grid-row: span 2; grid-template-rows: subgrid; row-gap: 0; min-width: var(--col-min); }
 /* The header is only as wide as its longest word needs, so long names wrap at spaces instead of widening the column.
-   The white shadow covers the gap under the rule so scrolled words never show through. */
-.results-name { position: sticky; top: 0; z-index: 1; width: min-content; min-width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 0 0 4px; background: #fff; box-shadow: 0 6px 0 #fff; border-bottom: 2px solid #222; font-size: var(--name-size); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
-.results-count { color: #888; font-weight: 400; font-size: var(--count-size); }
+   The shadow (in the page colour, same as the container) covers the gap under the rule so scrolled words never show through. */
+.results-name { position: sticky; top: 0; z-index: 1; width: min-content; min-width: 100%; box-sizing: border-box; margin: 0 0 6px; padding: 0 0 4px; background: var(--bg); box-shadow: 0 6px 0 var(--bg); border-bottom: 3px solid var(--ink); font-size: var(--name-size); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
+.results-count { color: var(--ink-muted); font-weight: 600; font-size: var(--count-size); }
 .results-list { list-style: none; margin: 0; padding: 0 0 12px; font-size: var(--word-size); line-height: 1.45; white-space: nowrap; }
-.results-list b { font-weight: 800; }
-.results-list s { color: #aaa; font-weight: 400; }
+/* Unique words: ink, heavy. Shared words: muted, regular weight, struck through (never colour alone). */
+.results-list b { font-weight: 800; color: var(--unique-word); letter-spacing: 0.02em; }
+.results-list s { color: var(--shared-word); font-weight: 400; text-decoration-thickness: 2px; letter-spacing: 0.02em; }
 .results-words-large { --word-size: 20px; --name-size: 20px; --count-size: 16px; --col-min: 120px; --col-gap: 18px; }
 .results-words-small { --word-size: 15px; --name-size: 15px; --count-size: 13px; --col-min: 72px; --col-gap: 12px; }
 
@@ -115,6 +245,7 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 @media (max-width: 700px) {
   .results-info .household-list li { font-size: 17px; }
   .results-info .household-list ul { gap: 4px; }
+  .results-info .household-list li { min-height: 44px; padding: 2px 4px 2px 8px; }
   .results-controls button { min-height: 44px; font-size: 18px; }
   .results-controls button.primary { font-size: 18px; }
 }
@@ -126,13 +257,15 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 .join-qr-pending { visibility: hidden; }
 .join-qr-code { width: 200px; height: 200px; flex: none; }
 .join-qr svg { width: 100%; height: 100%; display: block; }
-.join-qr figcaption { flex: 1 1 10em; min-width: 10em; font-size: 16px; line-height: 1.4; color: #555; }
+.join-qr .qr-light { fill: var(--qr-light); }
+.join-qr .qr-dark { fill: var(--qr-dark); }
+.join-qr figcaption { flex: 1 1 10em; min-width: 10em; font-size: 16px; line-height: 1.4; color: var(--ink-2); }
 
 /* Typist phone. The element tracks the visible viewport (--vv-h/--vv-top from useVisualViewport;
    100dvh without it), so an open keyboard shrinks the layout instead of covering it. It is a size
    container: the board is the largest square that leaves --typist-reserve below it for the input
    and the list header, and at most 55% of the height. The list takes what is left and scrolls. */
-.typist { max-width: none; margin: 0; padding: 0; display: block; gap: 0; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: #fff; container: typist / size; --top: 0px; --typist-reserve: 158px; }
+.typist { max-width: none; margin: 0; padding: 0; display: block; gap: 0; position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100dvh); overflow: hidden; background: var(--bg); container: typist / size; --top: 0px; --typist-reserve: 158px; }
 .typist-locked { --typist-reserve: 204px; }
 .typist-layout { position: relative; height: 100%; box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; --tb: max(0px, min(100cqw - 24px, 55cqh, 100cqh - var(--typist-reserve))); }
 .typist-board { flex: none; align-self: center; width: var(--tb); height: var(--tb); }
@@ -141,15 +274,17 @@ button.danger { background: #b3261e; border-color: #b3261e; color: #fff; min-wid
 .typist-side { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .typist-timesup { flex: none; font-size: 1.6rem; line-height: 36px; text-align: center; }
 .typist-form { flex: none; }
-input.typist-input { font-size: 24px; width: 100%; box-sizing: border-box; min-height: 56px; }
-.typist-message { flex: none; font-size: 16px; }
-/* The list card is translucent so the timer shows through it; its text is #222, which stays above
-   7:1 against the card blended over every drain color (9.55:1 over the end-of-round red). */
-.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: rgb(255 255 255 / 0.7); border: 2px solid #222; border-radius: 12px; overflow: hidden; }
-.typist-words-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 14px; border-bottom: 1px solid #ddd; }
-.typist-count { margin: 0; font-size: 16px; color: #222; }
-.typist-words .muted { color: #222; }
-button.typist-rotate { margin: 4px 0; color: #222; border-color: #555; }
+/* An ink border: the field sits over the timer colours, where --line-strong would fade. */
+input.typist-input { font-size: 24px; width: 100%; box-sizing: border-box; min-height: 56px; border-color: var(--ink); }
+/* An opaque pill: bare error red over the timer red would be unreadable (about 1.3:1). */
+.typist-message { flex: none; align-self: flex-start; max-width: 100%; box-sizing: border-box; font-size: 16px; padding: 4px 12px; background: var(--surface); border: 2px solid var(--error); border-radius: var(--radius); }
+/* The list card is translucent (--typist-card, the surface at 72%) so the timer shows through it; its
+   ink text stays above 10:1 against the card blended over every drain colour (see docs). */
+.typist-words { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--typist-card); border: 2px solid var(--ink); border-radius: var(--radius); overflow: hidden; }
+.typist-words-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 14px; border-bottom: 1px solid var(--line); }
+.typist-count { margin: 0; font-size: 16px; color: var(--ink); }
+.typist-words .muted { color: var(--ink); }
+button.typist-rotate { margin: 4px 0; color: var(--ink); border-color: var(--line-strong); }
 .typist-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 6px 14px 10px; font-size: 20px; line-height: 1.5; }
 /* Landscape phone: board on the left, input and list on the right. */
 @container typist (aspect-ratio >= 3/2) {

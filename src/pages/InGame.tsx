@@ -66,12 +66,12 @@ function Locked({ room }: { room: InGameRoom }) {
       {waiting ? (
         <p className="waiting">Waiting for the other households...</p>
       ) : (
-        <button type="button" className="pens-down" onClick={pensDown} disabled={state === 'sending'}>
+        <button type="button" className="primary pens-down" onClick={pensDown} disabled={state === 'sending'}>
           Pens down!
         </button>
       )}
       {canShow && (
-        <button type="button" className="show-results" onClick={showResults} disabled={showing}>
+        <button type="button" className="secondary show-results" onClick={showResults} disabled={showing}>
           Show results
         </button>
       )}

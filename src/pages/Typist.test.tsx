@@ -35,12 +35,13 @@ function makeRoom(over: Partial<TypistRoom> & { now?: number; roomOver?: Partial
   }
 }
 
-// jsdom normalizes colors (hsl -> rgb), so compare against the same normalization of the expected value.
+// jsdom normalizes colors (hex -> rgb), so compare against the same normalization of the expected value.
 function css(color: string) {
   const probe = document.createElement('div')
   probe.style.background = color
   return probe.style.background
 }
+const fillColor = (el: HTMLElement) => css(el.style.getPropertyValue('--fill'))
 
 let AudioCtor: ReturnType<typeof vi.fn>
 beforeEach(() => {
@@ -137,7 +138,8 @@ describe('Typist', () => {
     expect(tileTexts()).toEqual(LETTERS)
     const fill = screen.getByTestId('fill')
     expect(fill.style.height).toBe('50%')
-    expect(fill.style.background).toBe(css('hsl(65 70% 45%)'))
+    expect(fillColor(fill)).toBe(css('#f9d047'))
+    expect(fill).not.toHaveClass('fill-low')
     expect(fill).toHaveAttribute('aria-hidden', 'true')
     expect(container.textContent).not.toMatch(/\d+:\d\d/)
     expect(screen.getByRole('textbox')).toBeTruthy()
@@ -148,7 +150,8 @@ describe('Typist', () => {
     expect(screen.getByTestId('fill').style.height).toBe('100%')
     rerender(<Typist room={makeRoom({ now: T0 + ROUND_MS * 0.9 })} />)
     expect(parseFloat(screen.getByTestId('fill').style.height)).toBeCloseTo(10, 5)
-    expect(screen.getByTestId('fill').style.background).toBe(css('hsl(13 70% 45%)'))
+    expect(fillColor(screen.getByTestId('fill'))).toBe(css('#d74a21'))
+    expect(screen.getByTestId('fill')).toHaveClass('fill-low')
   })
 
   it('playing before the board arrives shows a blank square, not letters', () => {
