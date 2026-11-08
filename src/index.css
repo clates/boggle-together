@@ -297,3 +297,11 @@ button.typist-rotate { margin: 4px 0; color: var(--ink); border-color: var(--lin
   .typist-layout { flex-direction: row; --tb: max(0px, min(100cqh - 24px, 50cqw)); }
   .typist-board { align-self: flex-start; }
 }
+
+/* Copy link: a toast confirms the tap; the tag variant is the room code kept small on a busy screen. */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; max-width: min(90vw, 420px); padding: 10px 18px; border-radius: var(--radius); background: var(--ink); color: var(--surface); font-size: 16px; font-weight: 600; text-align: center; pointer-events: none; }
+.toast:empty { display: none; }
+button.copy-link-tag { display: inline-flex; align-items: baseline; gap: 8px; min-height: 36px; font-size: 14px; padding: 2px 10px; }
+.copy-link-code { font-weight: 800; letter-spacing: 0.06em; color: var(--ink); }
+.typist-room { flex: none; margin: 0; padding: 4px 8px 6px; text-align: right; }
+.results-room-code + button.copy-link { margin-top: 6px; }

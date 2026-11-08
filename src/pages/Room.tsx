@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import CodeField from '../components/CodeField'
+import CopyLink, { roomLink } from '../components/CopyLink'
 import HouseholdList from '../components/HouseholdList'
 import JoinQr from '../components/JoinQr'
 import LeaveRoom from '../components/LeaveRoom'
@@ -18,22 +19,12 @@ type Room = ReturnType<typeof useRoom>
 function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () => Promise<void> }) {
   const { participants, me, actions } = room
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const link = `${location.origin}/r/${code}`
+  const link = roomLink(code)
   const households = participants.filter((p) => p.kind === 'household')
   const readyCount = households.filter((p) => p.ready).length
   const canForce = households.length > 0 && readyCount >= Math.ceil(households.length / 2) && readyCount < households.length
 
   const run = (fn: () => Promise<void>) => fn().then(() => setError(null), (e) => setError(e instanceof Error ? e.message : 'Something went wrong'))
-
-  async function copy() {
-    try {
-      await navigator.clipboard?.writeText(link)
-      setCopied(true)
-    } catch {
-      /* ignore */
-    }
-  }
 
   return (
     <main>
@@ -41,7 +32,7 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
       <p className="code">{code}</p>
       <p>
         <span className="link">{link}</span>{' '}
-        <button type="button" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
+        <CopyLink code={code} />
       </p>
       <JoinQr url={`${link}?m=type`} />
       <HouseholdList participants={participants} meId={me?.id} onRemove={(id) => void run(() => actions.removeParticipant(id))} />
@@ -84,6 +75,9 @@ function TypistLobby({ code, room, onLeave }: { code: string; room: Room; onLeav
     <main>
       <h1>You are in. Waiting for the game to start</h1>
       <p className="code">{code}</p>
+      <p>
+        <CopyLink code={code} />
+      </p>
       {households.length === 0 ? (
         <>
           <p>
@@ -162,7 +156,7 @@ function RoomView() {
     case 'countdown':
     case 'playing':
     case 'locked':
-      return isTypist ? <Typist room={room} loadOwnWords={loadOwnWords} /> : <InGame code={code} room={room} />
+      return isTypist ? <Typist code={code} room={room} loadOwnWords={loadOwnWords} /> : <InGame code={code} room={room} />
     default:
       return <Results code={code} room={room} onLeave={leave} />
   }

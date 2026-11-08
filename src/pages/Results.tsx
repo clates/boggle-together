@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import Board from '../components/Board'
+import CopyLink from '../components/CopyLink'
 import HouseholdList from '../components/HouseholdList'
 import LeaveRoom from '../components/LeaveRoom'
 import { unlockAudio } from '../lib/audio'
@@ -122,6 +123,7 @@ export function ResultsView({ code, board, participants, columns, wordsStatus, o
           <div>
             <p className="results-room-label">Room</p>
             <p className="results-room-code">{code}</p>
+            <CopyLink code={code} className="subtle" />
           </div>
           <HouseholdList participants={participants} meId={meId} onRemove={onRemove} />
           {controls && (

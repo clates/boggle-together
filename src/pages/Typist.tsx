@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import Board, { type Rotation } from '../components/Board'
+import CopyLink from '../components/CopyLink'
 import Countdown from '../components/Countdown'
 import TimerFill from '../components/TimerFill'
 import { progress } from '../lib/phase'
@@ -20,9 +21,11 @@ const OFFLINE = "Couldn't send. Check your connection."
 const FRIENDLY: Record<string, string> = { 'Too late': 'Too late', 'Word limit reached': 'Word limit reached' }
 
 export default function Typist({
+  code,
   room,
   loadOwnWords,
 }: {
+  code: string
   room: TypistRoom
   loadOwnWords?: () => Promise<string[]>
 }) {
@@ -149,6 +152,9 @@ export default function Typist({
                   </li>
                 ))}
               </ul>
+              <p className="typist-room">
+                <CopyLink code={code} showCode />
+              </p>
             </section>
           </div>
         </div>
