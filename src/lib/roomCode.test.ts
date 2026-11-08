@@ -131,7 +131,7 @@ describe('words', () => {
     expect(suggestWord('PECKAN')).toBe('PECAN')
     expect(suggestWord('PEKAN')).toBe('PECAN')
     expect(suggestWord('MAPEL')).toBe('MAPLE') // a swap counts as one edit
-    expect(suggestWord('WILOW')).toBe('WILLOW')
+    expect(suggestWord('CEEDAR')).toBe('CEDAR')
   })
 
   it('no suggestion for a known word, a far-off word, or a tie', () => {

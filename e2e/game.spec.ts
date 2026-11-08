@@ -69,7 +69,7 @@ async function joinForm(p: Player, kind: 'household' | 'typist') {
   await p.page.getByLabel(/Your name/).fill(p.name)
   if (kind === 'typist') await p.page.getByRole('radio', { name: 'Type on my phone' }).check()
   await p.page.getByRole('button', { name: 'Join' }).click()
-  if (kind === 'typist') await expect(p.page.getByRole('heading', { name: 'Waiting for the game to start' })).toBeVisible()
+  if (kind === 'typist') await expect(p.page.getByRole('heading', { name: /Waiting for the game to start/ })).toBeVisible()
   else await expect(readyButton(p)).toBeVisible()
 }
 
@@ -159,8 +159,8 @@ test('full game', async ({ browser }) => {
   await joinByVoice(grandma, code, 'household')
   await joinAs(chris, code, 'typist')
   await joinByVoice(jo, code, 'typist')
-  await expect(lates.page.locator('.household-list li')).toHaveText([/Lates/, /Grandma/])
-  await expect(lates.page.getByText('2 people typing on phones')).toBeVisible()
+  await expect(lates.page.locator('.household-list ul:not(.typist-names) li')).toHaveText([/Lates/, /Grandma/])
+  await expect(lates.page.locator('.household-list .typist-names li')).toHaveText([/Chris/, /Jo/])
 
   // Round 1
   for (const p of households) await readyButton(p).click()
@@ -253,7 +253,7 @@ test('refresh mid-round keeps place', async ({ browser }) => {
 
   // Still the same household (same name, listed once) once the round is over
   await pensDownAll([lates, grandma], [lates, grandma, chris])
-  await expect(grandma.page.locator('.household-list li')).toHaveText([/Lates/, /Grandma/])
+  await expect(grandma.page.locator('.household-list ul:not(.typist-names) li')).toHaveText([/Lates/, /Grandma/])
   const rows = psql(`select kind || ':' || name from participants where room_code = '${code}' order by joined_at`)
   expect(rows.split('\n')).toEqual(['household:Lates', 'household:Grandma', 'typist:Chris'])
 })

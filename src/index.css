@@ -219,6 +219,12 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 .results-controls button.primary { font-size: 22px; font-weight: 700; }
 .results-note { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; font-size: 24px; }
 .results-note p { margin: 0; }
+.results-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.stats-ribbon { flex: none; display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; padding: 8px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.stats-ribbon .stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.stats-ribbon dt { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.stats-ribbon dd { margin: 0; font-size: 16px; color: var(--ink-2); }
+.stats-ribbon dd b { font-size: 20px; font-weight: 800; letter-spacing: 0.04em; color: var(--ink); }
 .results-words { flex: 1; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .results-cols { display: grid; grid-auto-flow: column; grid-auto-columns: auto; grid-template-rows: auto 1fr; column-gap: var(--col-gap); width: max-content; min-width: 100%; }
 /* Subgrid: every header shares row 1, so all lists start at the same height even when a name wraps. */

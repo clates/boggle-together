@@ -265,7 +265,7 @@ describe('Room', () => {
     const now = Date.now()
     setHook({ me: t, participants: [h, t] })
     const r1 = renderRoom()
-    expect(screen.getByText('Waiting for the game to start')).toBeInTheDocument()
+    expect(screen.getByText(/Waiting for the game to start/)).toBeInTheDocument()
     expect(screen.queryByTestId('join-qr-stub')).toBeNull()
     r1.unmount()
     for (const phase of ['countdown', 'playing', 'locked', 'results']) {
@@ -280,12 +280,25 @@ describe('Room', () => {
     }
   })
 
-  it('typist in lobby sees waiting screen', () => {
+  it('typist in lobby sees who is here and how many screens are ready', () => {
+    const h1 = p('1', 'household', true), h2 = p('2', 'household'), me = p('9', 'typist'), other = p('8', 'typist')
+    setHook({ me, participants: [h1, h2, me, other] })
+    renderRoom()
+    expect(screen.getByText(/Waiting for the game to start/)).toBeInTheDocument()
+    expect(screen.getByText(/1 of 2 shared screens are ready/)).toBeInTheDocument()
+    expect(screen.getByText('N1')).toBeInTheDocument()
+    expect(screen.getByText('N8')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /shared screen/i })).toBeNull()
+  })
+
+  it('a typist alone in the room is told what to do and can become the shared screen', async () => {
     const me = p('9', 'typist')
     setHook({ me, participants: [me] })
     renderRoom()
-    expect(screen.getByText('Waiting for the game to start')).toBeInTheDocument()
-    expect(screen.getByText(/type the words you find on this phone/i)).toBeInTheDocument()
+    expect(screen.getByText(/No shared screen has joined yet/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Use this device as the shared screen' }))
+    expect(hook.value.actions.removeParticipant).toHaveBeenCalledWith('9')
+    expect(hook.value.join).toHaveBeenCalledWith('household', 'N9')
   })
 
   it('stubs by phase and kind', async () => {

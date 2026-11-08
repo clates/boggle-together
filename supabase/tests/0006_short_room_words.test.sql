@@ -18,11 +18,11 @@ create temp table codes (c text);
 grant all on words_new, codes to authenticated;
 
 select is((select count(*)::int from words_new), 100, 'create_room has 100 words');
-select is((select count(*)::int from words_new where w !~ '^[A-Z]{2,8}$'), 0, 'all words are 2 to 8 capital letters');
+select is((select count(*)::int from words_new where w !~ '^[A-Z]{2,5}$'), 0, 'all words are 2 to 5 capital letters');
 select ok(exists (select 1 from words_new where w = 'PECAN'), 'PECAN is a word');
 select is(
   (select count(*)::int from words_new where w in (
-    'FIR', 'YEW', 'PINE', 'BEECH', 'MAHOGANY',
+    'FIR', 'YEW', 'PINE', 'BEECH', 'MAHOGANY', 'BEETROOT', 'PRIMROSE', 'HAYSTACK',
     'SPROUT', 'GARLIC', 'MUSHROOM', 'OKRA', 'ASH', 'IRIS', 'LARCH', 'FENNEL', 'GINGER', 'FIG', 'DATE', 'PEBBLE',
     'SEAWEED', 'CRESS', 'IVY', 'ELM', 'CHIVE')),
   0, 'retired and sound-alike words are not in the list');

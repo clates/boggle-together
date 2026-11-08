@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LEGACY_ROOM_WORDS, MAX_WORD_LENGTH, ROOM_WORDS } from './roomCode'
+import { EARLIER_ROOM_WORDS, LEGACY_ROOM_WORDS, MAX_WORD_LENGTH, ROOM_WORDS } from './roomCode'
 
 // Every migration as text, keyed by path, so the client lists can be checked against the SQL.
 const migrations = import.meta.glob('../../supabase/migrations/*.sql', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
@@ -17,13 +17,22 @@ const defining = Object.keys(migrations)
 describe('room-code words match the database', () => {
   it('ROOM_WORDS equals the list in the latest migration that defines create_room', () => {
     const latest = defining[defining.length - 1]
-    expect(latest).toMatch(/0005_room_code_words\.sql$/)
+    expect(latest).toMatch(/0006_short_room_words\.sql$/)
     expect([...ROOM_WORDS]).toEqual(wordsIn(migrations[latest]))
   })
 
   it('LEGACY_ROOM_WORDS equals the original 0001 list (rooms made before 0005 still use them)', () => {
     expect(defining[0]).toMatch(/0001_schema\.sql$/)
     expect([...LEGACY_ROOM_WORDS]).toEqual(wordsIn(migrations[defining[0]]))
+  })
+
+  it('EARLIER_ROOM_WORDS equals the 0005 list (rooms made before 0006 still use them)', () => {
+    const m5 = defining.find((p) => /0005_room_code_words\.sql$/.test(p))!
+    expect([...EARLIER_ROOM_WORDS]).toEqual(wordsIn(migrations[m5]))
+  })
+
+  it('every room-code word is five letters or fewer', () => {
+    for (const w of ROOM_WORDS) expect(w.length, w).toBeLessThanOrEqual(5)
   })
 
   it('the list is about 100 unique uppercase words and includes PECAN', () => {

@@ -61,6 +61,53 @@ function Lobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () 
 
 // A retry of the same code (from the not-found page) must look it up again: each retry bumps a
 // counter in the location state, which remounts the room and so reruns the lookup.
+// Typists never tap Ready: the round starts when the shared screens do. A typist who made the room
+// on their own phone has no shared screen yet, so they can make this device the shared screen.
+function TypistLobby({ code, room, onLeave }: { code: string; room: Room; onLeave: () => Promise<void> }) {
+  const { participants, me, actions, join } = room
+  const [error, setError] = useState<string | null>(null)
+  const households = participants.filter((p) => p.kind === 'household')
+  const readyCount = households.filter((p) => p.ready).length
+
+  async function becomeSharedScreen() {
+    if (!me) return
+    try {
+      await actions.removeParticipant(me.id)
+      await join('household', me.name)
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
+    }
+  }
+
+  return (
+    <main>
+      <h1>You are in. Waiting for the game to start</h1>
+      <p className="code">{code}</p>
+      {households.length === 0 ? (
+        <>
+          <p>
+            No shared screen has joined yet. A round starts when the shared screens (a tablet or laptop on each table) tap Ready, so open
+            this room on one of them and your phone will show the board when it starts.
+          </p>
+          <p className="muted">Playing on just this device? Use it as the shared screen instead.</p>
+          <button type="button" className="secondary" onClick={() => void becomeSharedScreen()}>
+            Use this device as the shared screen
+          </button>
+        </>
+      ) : (
+        <p>
+          {readyCount} of {households.length} shared {households.length === 1 ? 'screen is' : 'screens are'} ready. When the round starts, the
+          board appears here and you type the words you find.
+        </p>
+      )}
+      <HouseholdList participants={participants} meId={me?.id} />
+      {error && <p role="alert" className="error">{error}</p>}
+      <LeaveRoom onLeave={onLeave} />
+    </main>
+  )
+}
+
 export default function Room() {
   const retry = (useLocation().state as { retry?: number } | null)?.retry ?? 0
   return <RoomView key={retry} />
@@ -108,12 +155,7 @@ function RoomView() {
   switch (phase) {
     case 'lobby':
       return isTypist ? (
-        <main>
-          <h1>Waiting for the game to start</h1>
-          <p>When the round starts, type the words you find on this phone.</p>
-          <p className="code">{code}</p>
-          <LeaveRoom onLeave={leave} />
-        </main>
+        <TypistLobby code={code} room={room} onLeave={leave} />
       ) : (
         <Lobby code={code} room={room} onLeave={leave} />
       )
