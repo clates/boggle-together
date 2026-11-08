@@ -186,10 +186,11 @@ describe('Results', () => {
     // board: T E R S / A N O I / L D P M / U C H E
     setup({}, [{ participant_id: 't4', word: 'ZZZZ' }]) // nobody typed a real word
     const ribbon = await screen.findByTestId('stats-ribbon')
-    expect(within(ribbon).getByText('Longest word hiding here').nextElementSibling).toHaveTextContent('NOISR') // first alphabetically of the two 5-letter words
-    expect(within(ribbon).getByText('Longest word hiding here').nextElementSibling).toHaveTextContent('5 letters, 1 other this long')
+    expect(within(ribbon).getByText('Longest word').nextElementSibling).toHaveTextContent('NOISR') // first alphabetically of the two 5-letter words
+    expect(within(ribbon).getByText('Longest word').nextElementSibling).toHaveTextContent('+1 tied')
     expect(within(ribbon).getByText('Most exotic').nextElementSibling).toHaveTextContent('NOISR')
-    expect(within(ribbon).getByText('Words on this board').nextElementSibling).toHaveTextContent('4')
+    expect(within(ribbon).getByText('Words hiding here').nextElementSibling).toHaveTextContent('4')
+    expect(ribbon).not.toHaveTextContent(/letters|Scrabble/)
     expect(ribbon).not.toHaveTextContent('ZZZZ')
   })
 
