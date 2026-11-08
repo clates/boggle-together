@@ -25,8 +25,10 @@ export default function DogEar({
       {open && (
         <div className="dogear-panel">
           <p className="muted">Room code</p>
-          <p className="dogear-code">{code}</p>
-          <CopyLink code={code} />
+          <div className="code-row">
+            <p className="dogear-code">{code}</p>
+            <CopyLink code={code} />
+          </div>
           <button type="button" onClick={onRotate}>
             Rotate board ↻
           </button>

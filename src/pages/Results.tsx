@@ -122,8 +122,10 @@ export function ResultsView({ code, board, stats, participants, columns, wordsSt
         <div className="results-info">
           <div>
             <p className="results-room-label">Room</p>
-            <p className="results-room-code">{code}</p>
-            <CopyLink code={code} className="subtle" />
+            <div className="code-row">
+              <p className="results-room-code">{code}</p>
+              <CopyLink code={code} />
+            </div>
           </div>
           <HouseholdList participants={participants} meId={meId} onRemove={onRemove} />
           {controls && (

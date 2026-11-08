@@ -26,10 +26,12 @@ describe('CopyLink', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('shows the code beside the action in its discreet form', () => {
+  it('is an icon with no visible words, labelled for screen readers, and can show the code beside it', () => {
     render(<CopyLink code="POND-3580" showCode />)
-    expect(screen.getByRole('button')).toHaveTextContent('POND-3580')
-    expect(screen.getByRole('button')).toHaveTextContent('Copy link')
+    const button = screen.getByRole('button', { name: 'Copy link' })
+    expect(button).toHaveTextContent('')
+    expect(button.querySelector('svg')).not.toBeNull()
+    expect(screen.getByText('POND-3580')).toBeInTheDocument()
   })
 
   it('uses the old copy command where the clipboard API is missing', async () => {
