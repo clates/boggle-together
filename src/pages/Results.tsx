@@ -49,10 +49,10 @@ const LARGE_UP_TO = 4
 function StatsRibbon({ stats }: { stats: BoardStats }) {
   const others = stats.longestOthers
   const items: [string, string, string][] = [
-    ['Longest word hiding here', stats.longest, `${stats.longest.length} letters${others > 0 ? `, ${others === 1 ? '1 other' : `${others} others`} this long` : ''}`],
-    ['Most exotic', stats.exotic.word, `${stats.exotic.points} points in Scrabble`],
-    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `in ${stats.busiestTile.words} words`],
-    ['Words on this board', String(stats.wordCount), 'in all'],
+    ['Longest word', stats.longest, others > 0 ? `+${others} tied` : ''],
+    ['Most exotic', stats.exotic.word, `${stats.exotic.points}`],
+    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `${stats.busiestTile.words} words`],
+    ['Words hiding here', String(stats.wordCount), ''],
   ]
   return (
     <dl className="stats-ribbon" data-testid="stats-ribbon">
@@ -122,8 +122,10 @@ export function ResultsView({ code, board, stats, participants, columns, wordsSt
         <div className="results-info">
           <div>
             <p className="results-room-label">Room</p>
-            <p className="results-room-code">{code}</p>
-            <CopyLink code={code} className="subtle" />
+            <div className="code-row">
+              <p className="results-room-code">{code}</p>
+              <CopyLink code={code} />
+            </div>
           </div>
           <HouseholdList participants={participants} meId={meId} onRemove={onRemove} />
           {controls && (
