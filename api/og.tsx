@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Resvg } from '@resvg/resvg-js'
 import satori from 'satori'
-import { shareableCode } from '../src/lib/share'
-import { Card, HEIGHT, WIDTH } from './_card'
+import { shareableCode } from '../src/lib/share.js'
+import { Card, HEIGHT, WIDTH } from './_card.js'
 
 // vercel.json includes api/_fonts in this function's bundle
 const font = readFileSync(join(process.cwd(), 'api/_fonts/NotoSans-Bold.ttf'))

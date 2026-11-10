@@ -1,6 +1,6 @@
 // The 1200x630 link-preview image (rendered by @vercel/og in api/og.tsx). With a code, the room word is
 // spelled on tiles like the board's, with the full code and the invitation below; without one, BOGGLE.
-import { OG_COLOURS as C, ROOM_DESCRIPTION, SITE_NAME } from '../src/lib/share'
+import { OG_COLOURS as C, ROOM_DESCRIPTION, SITE_NAME } from '../src/lib/share.js'
 
 export const WIDTH = 1200
 export const HEIGHT = 630

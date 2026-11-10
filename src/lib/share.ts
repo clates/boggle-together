@@ -1,7 +1,7 @@
 // Link previews (Discord, Slack, iMessage...). Their crawlers do not run JavaScript, so the tags are
 // written into the HTML: index.html carries the home card, and middleware.ts swaps in a room card on
 // /r/:code. The image comes from api/og.tsx. Only the code from the URL is used, never room state.
-import { isComplete, isKnownWord, normalizeCode } from './roomCode'
+import { isComplete, isKnownWord, normalizeCode } from './roomCode.js'
 
 export const SITE_NAME = 'Boggle Together'
 export const HOME_DESCRIPTION =

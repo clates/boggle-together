@@ -2,7 +2,7 @@
 // crawlers do not run JavaScript, so the tags have to be in the HTML the server sends. People get the
 // same page with different <head> tags; if anything goes wrong, the request carries on untouched.
 import { next } from '@vercel/functions'
-import { injectShareMeta, shareMeta, shareableCode } from './src/lib/share'
+import { injectShareMeta, shareMeta, shareableCode } from './src/lib/share.js'
 
 export const config = { matcher: '/r/:code' }
 
