@@ -18,6 +18,10 @@ After a round, the results screen shows what was hiding on the board: the longes
 
 The theme is "Table Blue": a faint blue page, ivory letter tiles with navy letters and outlines, a crimson red for the main action (Start a room, Ready?, Join, Pens down!) and a darker blue for secondary actions and links. Every colour is a token in the `:root` block at the top of `src/index.css` (a unit test fails if a colour literal appears anywhere else); all text meets WCAG AA and tile letters AAA. The timer fill is computed in `src/lib/drain.ts`: it sweeps in OKLCH from a bluish green (full) through sunflower yellow (half) to vermilion (held for the last 15%), converted to plain hex so older iPads render it, with a darker "waterline" along its top edge and faint static stripes in the last 20%, so the stage reads even without colour vision.
 
+## Link previews
+
+A pasted room link (Discord, Slack, iMessage...) unfurls as "Join ROWAN-8209 · Boggle Together" with the room word on letter tiles. Link crawlers do not run JavaScript, so `middleware.ts` (Vercel Routing Middleware) writes the room's tags into the page on `/r/:code`, and `api/og.tsx` draws the 1200x630 image with `@vercel/og`; every other page uses the home card in `index.html`. Both use only the code in the link, never room state, and only codes whose word is on one of the room word lists get tiles (anything else gets the home card). The tags and copy live in `src/lib/share.ts`; the image's colours mirror the `:root` tokens (a unit test checks them). The font is Noto Sans Bold (`api/_fonts`, SIL Open Font License).
+
 ## Run locally
 
 Requires Node 22.22.2 or newer on the 22 line, or Node 24.15+ (jsdom 31, used by the unit tests, needs it; Vitest and Vite need 22.12+), and Docker (for the local Supabase stack).
