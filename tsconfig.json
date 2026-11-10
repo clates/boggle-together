@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "api", "middleware.ts", "vite.config.ts", "playwright.config.ts"]
 }
