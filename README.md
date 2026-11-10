@@ -20,7 +20,7 @@ The theme is "Table Blue": a faint blue page, ivory letter tiles with navy lette
 
 ## Link previews
 
-A pasted room link (Discord, Slack, iMessage...) unfurls as "Join ROWAN-8209 · Boggle Together" with the room word on letter tiles. Link crawlers do not run JavaScript, so `middleware.ts` (Vercel Routing Middleware) writes the room's tags into the page on `/r/:code`, and `api/og.tsx` draws the 1200x630 image (Satori lays it out, resvg turns it into a PNG); every other page uses the home card in `index.html`. Both use only the code in the link, never room state, and only codes whose word is on one of the room word lists get tiles (anything else gets the home card). The tags and copy live in `src/lib/share.ts`; the image's colours mirror the `:root` tokens (a unit test checks them). The font is Noto Sans Bold cut down to basic Latin to keep the edge function small (`api/_fonts`, SIL Open Font License).
+A pasted room link (Discord, Slack, iMessage...) unfurls as "Join ROWAN-8209 · Boggle Together" with the room word on letter tiles. Link crawlers do not run JavaScript, so `middleware.ts` (Vercel Routing Middleware) writes the room's tags into the page on `/r/:code`, and `api/og.tsx` draws the 1200x630 image (Satori lays it out, resvg turns it into a PNG); every other page uses the home card in `index.html`. Both use only the code in the link, never room state, and only codes whose word is on one of the room word lists get tiles (anything else gets the home card). The tags and copy live in `src/lib/share.ts`; the image's colours mirror the `:root` tokens (a unit test checks them). The font is Noto Sans Bold cut down to basic Latin to keep the edge function small (`fonts/`, SIL Open Font License).
 
 ## Run locally
 

@@ -3,6 +3,6 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": { "api/og.tsx": { "includeFiles": "api/_fonts/**" } },
+  "functions": { "api/og.tsx": { "includeFiles": "fonts/**" } },
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
 }
