@@ -194,6 +194,28 @@ describe('Results', () => {
     expect(ribbon).not.toHaveTextContent('ZZZZ')
   })
 
+  it('picks the busiest tile out on the board when its stat is tapped, and lets it go on a second tap', async () => {
+    setup({}, [{ participant_id: 't4', word: 'ZZZZ' }])
+    const ribbon = await screen.findByTestId('stats-ribbon')
+    const toggle = within(ribbon).getByRole('button', { name: /^Busiest tile: / })
+    const board = screen.getAllByTestId('board')[0]
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(board.querySelectorAll('[data-highlight]')).toHaveLength(0)
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    const lit = board.querySelectorAll('[data-highlight]')
+    expect(lit).toHaveLength(1)
+    // the highlighted tile shows the letter the stat names, and the label says where it is
+    expect(toggle.querySelector('b')).toHaveTextContent(lit[0].textContent!.toUpperCase())
+    const index = within(board).getAllByTestId('tile').indexOf(lit[0] as HTMLElement)
+    expect(toggle).toHaveAccessibleName(new RegExp(`\\(${['first', 'second', 'third', 'fourth'][Math.floor(index / 4)]} row, ${['first', 'second', 'third', 'fourth'][index % 4]} tile\\)`))
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(board.querySelectorAll('[data-highlight]')).toHaveLength(0)
+  })
+
   it('has no stats ribbon while the word list has not loaded or when it cannot', async () => {
     listMode.fail = true
     setup()

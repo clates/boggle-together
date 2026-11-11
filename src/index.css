@@ -14,6 +14,8 @@
   --tile-edge: #162137;          /* = --ink                 tile outline: >= 3.7:1 on bg and every timer colour */
   --tile-ink: #162137;           /* = --ink                 14.7:1 on ivory (AAA) */
   --tile-drop: rgb(22 33 55 / 0.22); /* soft shadow under tiles and raised panels */
+  --tile-highlight-face: #FEE9BE; /* = --warning-soft      a tile picked out on the results board (busiest tile) */
+  --tile-highlight-ring: #BA1C2D; /* = --cta-primary       its ring: 5.6:1 on bg, plus the face change, so not colour alone */
 
   /* ---- text ---- */
   --ink: #162137;                /* oklch(25% 0.045 262)    primary text, unique words, room code */
@@ -210,6 +212,8 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 .results-board { flex: none; width: 100%; }
 .results-board .board-wrap { width: 100%; }
 .results-board .tile { border-width: 2.5px; border-radius: 16%; padding-bottom: 2cqmin; box-shadow: inset 0 -2cqmin 0 var(--tile-shade), 0 2px 0 var(--tile-drop); }
+/* Drawn inside the tile (the side pane scrolls, so anything outside would be clipped at its edge). */
+.results-board .tile-highlight { background: var(--tile-highlight-face); border-color: var(--tile-highlight-ring); box-shadow: inset 0 0 0 3px var(--tile-highlight-ring), inset 0 -2cqmin 0 var(--tile-shade), 0 2px 0 var(--tile-drop); }
 .results-info { display: flex; flex-direction: column; gap: 14px; }
 .results-room-label { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-2); letter-spacing: 0.08em; text-transform: uppercase; }
 .results-room-code { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.04em; }
@@ -225,6 +229,11 @@ button.dogear-tab:focus-visible { border-radius: 0 0 0 12px; box-shadow: inset 0
 .stats-ribbon dt { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .stats-ribbon dd { margin: 0; font-size: 16px; color: var(--ink-2); }
 .stats-ribbon dd b { font-size: 20px; font-weight: 800; letter-spacing: 0.04em; color: var(--ink); }
+/* The busiest tile is tappable: the value reads like the others, with a "show"/"hide" link-style hint. */
+.stats-ribbon button.stat-toggle { min-height: 0; margin: -4px -6px; padding: 4px 6px; border: none; border-radius: 8px; background: transparent; color: var(--ink-2); font-weight: 400; text-align: left; }
+.stats-ribbon .stat-toggle-hint { color: var(--link); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) { .stats-ribbon button.stat-toggle:enabled:hover { background: var(--cta-outline-hover); } }
+.stats-ribbon button.stat-toggle[aria-pressed='true'] { background: var(--tile-highlight-face); }
 .results-words { flex: 1; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .results-cols { display: grid; grid-auto-flow: column; grid-auto-columns: auto; grid-template-rows: auto 1fr; column-gap: var(--col-gap); width: max-content; min-width: 100%; }
 /* Subgrid: every header shares row 1, so all lists start at the same height even when a name wraps. */
