@@ -55,19 +55,35 @@ describe('boardStats', () => {
     expect(boardStats(BOARD, ['QUIL'])!.exotic.points).toBe(13)
   })
 
-  it('counts the busiest tile (alphabetical on a tie) by the number of different words it appears in', () => {
+  it('counts the busiest tile (first in reading order on a tie) by the number of different words it appears in', () => {
     const s = boardStats(BOARD, ['TEAM', 'TEA', 'TEAR'])!
-    expect(s.busiestTile).toEqual({ tile: 'A', words: 3 })
+    // T, E and A are each in all three words: the first of them in reading order wins
+    const first = Math.min(...['T', 'E', 'A'].map((t) => BOARD.indexOf(t)))
+    expect(s.busiestTile).toEqual({ tile: BOARD[first], cell: first, words: 3 })
+  })
+
+  it('counts two tiles with the same letter apart', () => {
+    // SAD can only use A(0); ANT, TAN, EAT and TEA can only use A(10). Per letter that would be
+    // "A: 5 words", but no single A tile is in more than 4.
+    // A D X X
+    // S X X X
+    // X X A N
+    // X X E T
+    const board = ['A', 'D', 'X', 'X', 'S', 'X', 'X', 'X', 'X', 'X', 'A', 'N', 'X', 'X', 'E', 'T']
+    const s = boardStats(board, ['SAD', 'ANT', 'TAN', 'EAT', 'TEA'])!
+    expect(s.wordCount).toBe(5)
+    expect(s.busiestTile).toEqual({ tile: 'A', cell: 10, words: 4 })
   })
 })
 
 describe('Boggle rules, checked against an independent search', () => {
   // Reference: list every path on the board (no tile twice, each step to one of the 8 neighbours),
   // written as plain coordinates so it shares no logic with canTrace.
-  function allWords(board: string[], maxLen: number): Set<string> {
+  function allWords(board: string[], maxLen: number, cells?: Map<string, Set<number>>): Set<string> {
     const found = new Set<string>()
     const extend = (path: number[], text: string) => {
       if (text.length >= 1) found.add(text)
+      if (cells) for (const c of path) cells.set(text, (cells.get(text) ?? new Set()).add(c))
       if (text.length >= maxLen) return
       const [r, c] = [Math.floor(path[path.length - 1] / 4), path[path.length - 1] % 4]
       for (let r2 = 0; r2 < 4; r2++)
@@ -121,7 +137,8 @@ describe('Boggle rules, checked against an independent search', () => {
     const letters = 'AAEEIOURSTLNDCMPH'
     for (let b = 0; b < 15; b++) {
       const board = Array.from({ length: 16 }, () => letters[Math.floor(rand() * letters.length)])
-      const words = [...allWords(board, 6)].filter((w) => w.length >= 3)
+      const cells = new Map<string, Set<number>>() // word -> every cell on some path for it
+      const words = [...allWords(board, 6, cells)].filter((w) => w.length >= 3)
       // type a mix of real paths and impossible words of every length
       const typed = [...words.filter(() => rand() < 0.15), 'ZZZZZZZZZZ', 'AAAAAAAAAAAAAAAA', 'QUITE']
       const s = boardStats(board, typed)
@@ -132,10 +149,11 @@ describe('Boggle rules, checked against an independent search', () => {
       }
       expect(s!.longest.length).toBe(Math.max(...valid.map((w) => w.length)))
       expect(valid).toContain(s!.longest)
-      const count = (t: string) => valid.filter((w) => w.includes(t)).length
-      const best = Math.max(...[...new Set(board)].map(count))
+      const count = (cell: number) => valid.filter((w) => cells.get(w)!.has(cell)).length
+      const best = Math.max(...board.map((_, cell) => count(cell)))
       expect(s!.busiestTile.words).toBe(best)
-      expect(count(s!.busiestTile.tile)).toBe(best)
+      expect(count(s!.busiestTile.cell)).toBe(best)
+      expect(s!.busiestTile.tile).toBe(board[s!.busiestTile.cell])
     }
   })
 
@@ -144,6 +162,8 @@ describe('Boggle rules, checked against an independent search', () => {
     const board = ['Qu', 'A', 'U', 'X', 'E', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']
     const s = boardStats(board, ['QUA', 'QUE', 'EAU'])!
     expect(s.wordCount).toBe(3)
-    expect(s.busiestTile).toEqual({ tile: 'A', words: 2 })
+    // Qu (QUA, QUE) and A (QUA, EAU) tie at 2, and Qu comes first; the U tile is only in EAU
+    expect(s.busiestTile).toEqual({ tile: 'QU', cell: 0, words: 2 })
+    expect(boardStats(board, ['QUA', 'QUE', 'EAU', 'QUAE'])!.busiestTile).toEqual({ tile: 'QU', cell: 0, words: 3 })
   })
 })

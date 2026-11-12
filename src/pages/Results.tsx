@@ -45,13 +45,18 @@ export type ResultsViewProps = {
 
 const LARGE_UP_TO = 4
 
-// A thin strip of round facts above the word lists.
-function StatsRibbon({ stats }: { stats: BoardStats }) {
+const ORDINAL = ['first', 'second', 'third', 'fourth']
+
+// A thin strip of round facts above the word lists. The busiest tile is a toggle that picks that one
+// tile out on the board (a letter can be on several tiles, and only one of them is the busiest).
+function StatsRibbon({ stats, showBusiest, onToggleBusiest }: { stats: BoardStats; showBusiest: boolean; onToggleBusiest: () => void }) {
   const others = stats.longestOthers
+  const busiest = stats.busiestTile
+  const where = `${ORDINAL[Math.floor(busiest.cell / 4)]} row, ${ORDINAL[busiest.cell % 4]} tile`
   const items: [string, string, string][] = [
     ['Longest word', stats.longest, others > 0 ? `+${others} tied` : ''],
     ['Most exotic', stats.exotic.word, `${stats.exotic.points}`],
-    ['Busiest tile', stats.busiestTile.tile.toUpperCase(), `${stats.busiestTile.words} words`],
+    ['Busiest tile', busiest.tile.toUpperCase(), `${busiest.words} words`],
     ['Words hiding here', String(stats.wordCount), ''],
   ]
   return (
@@ -60,7 +65,21 @@ function StatsRibbon({ stats }: { stats: BoardStats }) {
         <div key={label} className="stat">
           <dt>{label}</dt>
           <dd>
-            <b>{value}</b> <span>{note}</span>
+            {label === 'Busiest tile' ? (
+              <button
+                type="button"
+                className="stat-toggle"
+                aria-pressed={showBusiest}
+                aria-label={`Busiest tile: ${value} (${where}), ${note}. Show it on the board`}
+                onClick={onToggleBusiest}
+              >
+                <b>{value}</b> <span>{note}</span> <span className="stat-toggle-hint">{showBusiest ? 'hide' : 'show'}</span>
+              </button>
+            ) : (
+              <>
+                <b>{value}</b> <span>{note}</span>
+              </>
+            )}
           </dd>
         </div>
       ))}
@@ -114,11 +133,13 @@ export function ResultsView({ code, board, stats, participants, columns, wordsSt
       </div>
     )
   else words = <WordColumns columns={columns} />
+  const [showBusiest, setShowBusiest] = useState(false)
+  const highlight = showBusiest && stats ? stats.busiestTile.cell : undefined
 
   return (
     <div className="results" data-testid="results">
       <aside className="results-side">
-        <div className="results-board">{board ? <Board letters={board} rotation={0} /> : <div className="board-wrap" />}</div>
+        <div className="results-board">{board ? <Board letters={board} rotation={0} highlight={highlight} /> : <div className="board-wrap" />}</div>
         <div className="results-info">
           <div>
             <p className="results-room-label">Room</p>
@@ -149,7 +170,7 @@ export function ResultsView({ code, board, stats, participants, columns, wordsSt
         </div>
       </aside>
       <div className="results-main">
-        {stats && <StatsRibbon stats={stats} />}
+        {stats && <StatsRibbon stats={stats} showBusiest={showBusiest} onToggleBusiest={() => setShowBusiest((v) => !v)} />}
         {words}
       </div>
     </div>
